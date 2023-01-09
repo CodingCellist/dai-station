@@ -3,11 +3,26 @@ module CSP.Parser
 
 import Text.Parser
 
+import Data.List1
 import Data.String
 
 import CSP.Lexer
 
 %default total
+
+||| The "head" of a constraint, containing the variable indices the constraint
+||| concerns.
+||| N.B.: Indexes start at 0.
+public export
+data CDecl : Type where
+  CHead : (idxA : Nat) -> (idxB : Nat) -> CDecl
+
+||| A binary tuple of values.
+public export
+data BinTup : Type where
+  Tup : (valA : Nat) -> (valB : Nat) -> BinTup
+
+  
 
 public export
 data CSPPart : Type where
@@ -17,26 +32,97 @@ data CSPPart : Type where
   ||| Domain of a variable; lower and upper inclusive bound.
   Domain : (lBound : Nat) -> (uBound : Nat) -> CSPPart
 
-  ||| Start of a constraint declaration between two variables.
-  CStart : (idxA : Nat) -> (idxB : Nat) -> CSPPart
+  ||| There are 2 parts to a constraint:
+  |||   1) The "head", containing the variable indices the constraint concerns.
+  |||   2) The tuples of valid values that the variables may assume.
+  Constraint : (cIdxs : CDecl) -> (tups : List1 BinTup) -> CSPPart
 
-  ||| A tuple of permitted values.
-  BinTup : (valA : Nat) -> (valB : Nat) -> CSPPart
 
-
-||| For handling whitespace.
+||| Parse a single `WS` token.
 ws : Grammar _ CSPTok True ()
 ws = terminal "Expected whitespace"
         (\case WS => pure ()
                _  => Nothing)
 
+||| Parse a single `LParens` token.
+lParens : Grammar _ CSPTok True ()
+lParens = terminal "Expected '('"
+            (\case LParens => pure ()
+                   _       => Nothing)
+
+||| Parse a single `RParens` token.
+rParens : Grammar _ CSPTok True ()
+rParens = terminal "Expected ')'"
+            (\case RParens => pure ()
+                   _       => Nothing)
+
+||| Parse a single `Comma` token.
+comma : Grammar _ CSPTok True ()
+comma = terminal "Expected a comma"
+          (\case Comma => pure ()
+                 _     => Nothing)
+
+||| A value which must be positive, i.e. a `Nat`.
+natVal : Grammar _ CSPTok True Nat
+natVal = terminal "Expected a positive integer"
+            (\case (Val v) => do n <- parsePositive v ; pure n
+                   _       => Nothing)
+
+||| Parse the first token of a constraint declaration (`CStart`).
+cStart : Grammar _ CSPTok True ()
+cStart = terminal "Expected the start of a constraint (i.e. a 'c')"
+            (\case CStart => pure ()
+                   _      => Nothing)
+
 ||| The number of variables. This should be the first thing in the CSP file.
 nVars : Grammar _ CSPTok True CSPPart
-nVars = termNVars
-     <|> (do ignore $ some ws; termNVars)
-     where
-       termNVars : Grammar _ CSPTok True CSPPart
-       termNVars = terminal "Expected nVars: a positive integer."
-                      (\case (Val v) => do n <- parsePositive v; pure (NVars n)
-                             _ => Nothing)
+nVars =
+  afterMany ws $
+    do n <- natVal
+       ws   -- newline terminated
+       pure (NVars n)
+
+||| A domain is the lower bound, a comma, optionally some whitespace, and then
+||| the upper bound.
+domain : Grammar _ CSPTok True CSPPart
+domain =
+  do lBound <- natVal
+     comma
+     uBound <- afterMany ws natVal
+     ws   -- newline terminated
+     pure (Domain lBound uBound)
+
+||| The start of a constraint declaration is denoted by a 'c', a left
+||| parenthesis, the index of the first variable, a comma, optionally some
+||| whitespace, the index of the second variable, and finally a right
+||| parenthesis.
+cDecl : Grammar _ CSPTok True CDecl
+cDecl =
+  do cStart
+     lParens
+     idxA <- natVal
+     comma
+     idxB <- afterMany ws natVal
+     rParens
+     ws   -- newline terminated
+     pure (CHead idxA idxB)
+
+||| A binary tuple is the first value, a comma, optionally some whitespace, and
+||| then the second value.
+%inline
+binTup : Grammar _ CSPTok True BinTup
+binTup =
+  do valA <- natVal
+     comma
+     valB <- afterMany ws natVal
+     ws   -- newline terminated
+     pure (Tup valA valB)
+
+||| A constraint is a declaration, followed by some binary tuples of values.
+constraint : Grammar _ CSPTok True CSPPart
+constraint =
+   do decl <- cDecl
+      tups <- some binTup
+      ws    -- newline terminated
+      pure (Constraint decl tups)
 
