@@ -24,6 +24,10 @@ data BinTup : Type where
 
   
 
+||| The constituent parts of a CSP:
+|||   - a number of variables
+|||   - variable domains
+|||   - constraints
 public export
 data CSPPart : Type where
   ||| The number of variables in a CSP.
@@ -37,6 +41,14 @@ data CSPPart : Type where
   |||   2) The tuples of valid values that the variables may assume.
   Constraint : (cIdxs : CDecl) -> (tups : List1 BinTup) -> CSPPart
 
+
+||| A Constraint Satisfaction Problem.
+public export
+data CSP : Type where
+  MkCSP :  (noVars : CSPPart)
+        -> (doms : List1 CSPPart)
+        -> (cs : List CSPPart)    -- Nil is just "anything goes"
+        -> CSP
 
 ||| Parse a single `WS` token.
 ws : Grammar _ CSPTok True ()
@@ -77,10 +89,9 @@ cStart = terminal "Expected the start of a constraint (i.e. a 'c')"
 ||| The number of variables. This should be the first thing in the CSP file.
 nVars : Grammar _ CSPTok True CSPPart
 nVars =
-  afterMany ws $
-    do n <- natVal
-       ws   -- newline terminated
-       pure (NVars n)
+  do n <- natVal
+     ws   -- newline terminated
+     pure (NVars n)
 
 ||| A domain is the lower bound, a comma, optionally some whitespace, and then
 ||| the upper bound.
@@ -121,8 +132,22 @@ binTup =
 ||| A constraint is a declaration, followed by some binary tuples of values.
 constraint : Grammar _ CSPTok True CSPPart
 constraint =
-   do decl <- cDecl
-      tups <- some binTup
-      ws    -- newline terminated
-      pure (Constraint decl tups)
+  do decl <- cDecl
+     tups <- some binTup
+     ws    -- newline terminated
+     pure (Constraint decl tups)
+
+||| A Constraint Satisfaction Problem consists of the number of variables to
+||| solve, the domains of the variables, and the constraints between them.
+csp : Grammar _ CSPTok True CSP
+csp =
+  do noVars <- afterMany ws $ nVars
+     doms   <- afterMany ws $ some domain
+     cs     <- afterMany ws $ many constraint
+     pure (MkCSP noVars doms cs)
+
+||| Parse the given CSP token-stream.
+export
+parse : List (WithBounds CSPTok) -> ?parseTy
+parse toks = parse csp toks
 
