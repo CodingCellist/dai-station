@@ -75,6 +75,6 @@ clean (tokens, inputRemainder) = (filter relevant tokens, inputRemainder)
 
 ||| Lex a string containing a CSP.
 export
-lex : String -> ?lexTy
+lex : String -> (List (WithBounds CSPTok), (Int, (Int, String)))
 lex cspStr = clean $ lex cspMap cspStr
 
