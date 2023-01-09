@@ -5,6 +5,7 @@ import Text.Parser
 
 import Data.List1
 import Data.String
+import System.File
 
 import CSP.Lexer
 
@@ -134,7 +135,7 @@ constraint : Grammar _ CSPTok True CSPPart
 constraint =
   do decl <- cDecl
      tups <- some binTup
-     ws    -- newline terminated
+--     ws    -- newline terminated
      pure (Constraint decl tups)
 
 ||| A Constraint Satisfaction Problem consists of the number of variables to
@@ -143,11 +144,68 @@ csp : Grammar _ CSPTok True CSP
 csp =
   do noVars <- afterMany ws $ nVars
      doms   <- afterMany ws $ some domain
-     cs     <- afterMany ws $ many constraint
+     cs     <- many constraint
      pure (MkCSP noVars doms cs)
 
 ||| Parse the given CSP token-stream.
 export
-parse : List (WithBounds CSPTok) -> ?parseTy
+parse : List (WithBounds CSPTok) -> Either (List1 (ParsingError CSPTok)) (CSP, List (WithBounds CSPTok))
 parse toks = parse csp toks
+
+
+%default partial
+
+||| Attempt to parse the contents of the given file as a CSP definition,
+||| returning an error message if something went wrong.
+export
+parseFile : File -> IO (Either String CSP)
+parseFile fh =
+  do Right contents <- fRead fh
+       | Left fErr => pure (Left $ "ERROR: " ++ show fErr)
+     let (toks, (_, _, "")) = lex contents
+       | (_, (_, _, rem)) => pure (Left $ lexError rem)
+     let Right (theCSP, []) = parse toks
+       | Right (_, rem) => pure (Left $ parseRemError rem)
+       | Left errs => pure (Left $ parseError errs)
+     pure (Right theCSP)
+  where
+    lexError : (rem : String) -> String
+    lexError rem =
+      """
+      ERROR: Couldn't lex entire file! Remainder:
+      -----
+      \{rem}
+      -----
+      """
+
+    parseRemError : (rem : List (WithBounds CSPTok)) -> String
+    parseRemError rem =
+      """
+      ERROR: Couldn't parse entire token stream! Remainder:
+      -----
+      \{show rem}
+      -----
+      """
+
+    parseError : (errs : List1 (ParsingError CSPTok)) -> String
+    parseError errs =
+      """
+      ERROR: Error(s) while parsing token stream!:
+      -----
+      \{concatMap ((++) "\n") (map show errs)}
+      -----
+      """
+
+export
+test : IO ()
+test =
+--  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/langfords/langfords2_3.csp" Read
+--  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/langfords/langfords2_4.csp" Read
+--  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/langfords/langfords3_10.csp" Read
+  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/nqueens/4Queens.csp" Read
+--  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/nqueens/8Queens.csp" Read
+       | Left err => printLn err
+     Right _ <- parseFile fh
+       | Left err => putStrLn err
+     putStrLn "Success!!"
 

@@ -3,6 +3,9 @@ module CSP.Lexer
 
 import Text.Lexer
 
+import Deriving.Show
+%language ElabReflection
+
 %default total
 
 public export
@@ -12,6 +15,7 @@ data CSPTok : Type where
   RParens : CSPTok
   Comma : CSPTok
 
+  -- FIXME: separate into newlines and spaces, otherwise parser breaks
   ||| An amount of whitespace
   WS : CSPTok
 
@@ -20,6 +24,11 @@ data CSPTok : Type where
 
   ||| A positive value (nVars, domain bound, or idx)
   Val : String -> CSPTok
+
+public export
+%hint
+ShowCSPTok : Show CSPTok
+ShowCSPTok = %runElab derive
 
 
 ||| Comments start with '//'.
