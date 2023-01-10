@@ -44,11 +44,18 @@ data CSPPart : Type where
 
 ||| A Constraint Satisfaction Problem.
 public export
-data CSP : Type where
-  MkCSP :  (noVars : CSPPart)
-        -> (doms : List1 CSPPart)
-        -> (cs : List CSPPart)    -- Nil is just "anything goes"
-        -> CSP
+record CSP where
+  constructor MkCSP
+
+  ||| The number of variables in the CSP
+  noVars : CSPPart
+
+  ||| The list of variable domains
+  doms : List1 CSPPart
+
+  ||| The list of constraints for a variable pair
+  cs : List CSPPart
+
 
 ||| Parse a single `LParens` token.
 lParens : Grammar _ CSPTok True ()
