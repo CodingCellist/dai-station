@@ -1,5 +1,5 @@
 ||| Parser for the binary CSP files found in `test`.
-module CSP.Parser
+module Dai.CSP.Parser
 
 import Text.Parser
 
@@ -7,7 +7,7 @@ import Data.List1
 import Data.String
 import System.File
 
-import CSP.Lexer
+import Dai.CSP.Lexer
 
 %default total
 

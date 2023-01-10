@@ -16,7 +16,10 @@ authors = "Thomas E. Hansen (CodingCellist)"
 depends = contrib
 
 -- modules to install
--- modules =
+modules = Dai.CSP.Lexer
+        , Dai.CSP.Parser
+        , Dai.CSP
+        , Dai
 
 -- main file (i.e. file to load at REPL)
 -- main =

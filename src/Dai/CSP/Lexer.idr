@@ -1,5 +1,5 @@
 ||| Lexer for the binary CSP files found in `test`.
-module CSP.Lexer
+module Dai.CSP.Lexer
 
 import Text.Lexer
 
