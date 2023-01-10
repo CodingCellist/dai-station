@@ -14,6 +14,8 @@ data CSPTok : Type where
   LParens : CSPTok
   RParens : CSPTok
   Comma : CSPTok
+  Space : CSPTok
+  Newline : CSPTok
 
   -- FIXME: separate into newlines and spaces, otherwise parser breaks
   ||| An amount of whitespace
@@ -25,8 +27,8 @@ data CSPTok : Type where
   ||| A positive value (nVars, domain bound, or idx)
   Val : String -> CSPTok
 
-public export
 %hint
+public export
 ShowCSPTok : Show CSPTok
 ShowCSPTok = %runElab derive
 
@@ -47,9 +49,11 @@ rParens = is ')'
 comma : Lexer
 comma = is ','
 
-||| An amount of whitespace
-ws : Lexer
-ws = spaces
+||| ' ' -- a single space.
+aSpace : Lexer
+aSpace = is ' '
+
+-- `newline` is a pre-defined lexer
 
 ||| 'c' -- start of a constraint declaration
 cStart : Lexer
@@ -66,7 +70,8 @@ cspMap =
   , (lParens   , const LParens)
   , (rParens   , const RParens)
   , (comma     , const Comma)
-  , (ws        , const WS)
+  , (aSpace    , const Space)
+  , (newline   , const Newline)
   , (cStart    , const CStart)
   , (val       , \v => Val v)
   ]

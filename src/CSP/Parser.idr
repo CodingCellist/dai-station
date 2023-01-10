@@ -51,12 +51,6 @@ data CSP : Type where
         -> (cs : List CSPPart)    -- Nil is just "anything goes"
         -> CSP
 
-||| Parse a single `WS` token.
-ws : Grammar _ CSPTok True ()
-ws = terminal "Expected whitespace"
-        (\case WS => pure ()
-               _  => Nothing)
-
 ||| Parse a single `LParens` token.
 lParens : Grammar _ CSPTok True ()
 lParens = terminal "Expected '('"
@@ -75,6 +69,18 @@ comma = terminal "Expected a comma"
           (\case Comma => pure ()
                  _     => Nothing)
 
+||| Parse a single `Space` token.
+aSpace : Grammar _ CSPTok True ()
+aSpace = terminal "Expected ' ' (a space)"
+            (\case Space => pure ()
+                   _     => Nothing)
+
+||| Parse a single `Newline` token.
+newline : Grammar _ CSPTok True ()
+newline = terminal "Expected a newline/line-break"
+            (\case Newline => pure ()
+                   _       => Nothing)
+
 ||| A value which must be positive, i.e. a `Nat`.
 natVal : Grammar _ CSPTok True Nat
 natVal = terminal "Expected a positive integer"
@@ -91,43 +97,42 @@ cStart = terminal "Expected the start of a constraint (i.e. a 'c')"
 nVars : Grammar _ CSPTok True CSPPart
 nVars =
   do n <- natVal
-     ws   -- newline terminated
+     newline
      pure (NVars n)
 
-||| A domain is the lower bound, a comma, optionally some whitespace, and then
-||| the upper bound.
+||| A domain is the lower bound, a comma, optionally some spaces, and then the
+||| upper bound.
 domain : Grammar _ CSPTok True CSPPart
 domain =
   do lBound <- natVal
      comma
-     uBound <- afterMany ws natVal
-     ws   -- newline terminated
+     uBound <- afterMany aSpace natVal
+     newline
      pure (Domain lBound uBound)
 
 ||| The start of a constraint declaration is denoted by a 'c', a left
 ||| parenthesis, the index of the first variable, a comma, optionally some
-||| whitespace, the index of the second variable, and finally a right
-||| parenthesis.
+||| spaces, the index of the second variable, and finally a right parenthesis.
 cDecl : Grammar _ CSPTok True CDecl
 cDecl =
   do cStart
      lParens
      idxA <- natVal
      comma
-     idxB <- afterMany ws natVal
+     idxB <- afterMany aSpace natVal
      rParens
-     ws   -- newline terminated
+     newline
      pure (CHead idxA idxB)
 
-||| A binary tuple is the first value, a comma, optionally some whitespace, and
-||| then the second value.
+||| A binary tuple is the first value, a comma, optionally some spaces, and then
+||| the second value.
 %inline
 binTup : Grammar _ CSPTok True BinTup
 binTup =
   do valA <- natVal
      comma
-     valB <- afterMany ws natVal
-     ws   -- newline terminated
+     valB <- afterMany aSpace natVal
+     newline
      pure (Tup valA valB)
 
 ||| A constraint is a declaration, followed by some binary tuples of values.
@@ -135,16 +140,16 @@ constraint : Grammar _ CSPTok True CSPPart
 constraint =
   do decl <- cDecl
      tups <- some binTup
---     ws    -- newline terminated
+     newline
      pure (Constraint decl tups)
 
 ||| A Constraint Satisfaction Problem consists of the number of variables to
 ||| solve, the domains of the variables, and the constraints between them.
 csp : Grammar _ CSPTok True CSP
 csp =
-  do noVars <- afterMany ws $ nVars
-     doms   <- afterMany ws $ some domain
-     cs     <- many constraint
+  do noVars <- afterMany newline $ nVars
+     doms   <- afterMany newline $ some domain
+     cs     <- many $ afterMany newline constraint
      pure (MkCSP noVars doms cs)
 
 ||| Parse the given CSP token-stream.
@@ -204,6 +209,7 @@ test =
 --  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/langfords/langfords3_10.csp" Read
   do Right fh <- openFile "/home/thomas/Projects/dai-station/test/nqueens/4Queens.csp" Read
 --  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/nqueens/8Queens.csp" Read
+--  do Right fh <- openFile "/home/thomas/Projects/dai-station/test/nqueens/10Queens.csp" Read
        | Left err => printLn err
      Right _ <- parseFile fh
        | Left err => putStrLn err
