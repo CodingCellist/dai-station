@@ -32,3 +32,11 @@ pickVal var = case var.dom of
                    [] => ?pickValDomEmptyERROR
                    (val :: vals) => val
 
+
+------------------------------------------------------------------------
+-- Interfaces
+
+public export
+Eq Variable where
+  (==) (MkVar idxA _ _) (MkVar idxB _ _) = idxA == idxB
+
