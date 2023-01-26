@@ -1,7 +1,11 @@
 module Dai
 
 import public Dai.CSP
-import public Dai.Arc   -- necessary?
+
+-- necessary ?
+import public Dai.Arc
+import public Dai.Variable
+
 import public Dai.ForwardChecker
 
 public export
