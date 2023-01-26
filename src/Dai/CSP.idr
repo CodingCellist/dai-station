@@ -1,11 +1,12 @@
 module Dai.CSP
 
+import Text.Parser
 import System.File
 
 import Dai.CSP.Lexer
+import Dai.CSP.Parser
 
-import public Text.Parser
-import public Dai.CSP.Parser
+import public Dai.CSP.Common
 
 ||| Attempt to parse the contents of the given file as a CSP definition,
 ||| returning an error message if something went wrong.

@@ -39,26 +39,6 @@ constrToArcs (MkConstraint (CHead idxA idxB) tups) =
       arc2 = MkArc idxB idxA (map swap tups')
   in (arc1, arc2)
 
-||| A Constraint Satisfaction Problem.
-public export
-record CSP where
-  constructor MkCSP
-
-  ||| The number of variables in the CSP
-  noVars : Nat
-
-  -- ||| The list of variable domains
-  -- doms : List1 CSPPart
-
-  ||| The variables in the CSP
-  vars : List Variable
-
-  -- ||| The list of constraints for a variable pair
-  -- cs : List CSPPart
-
-  ||| The arcs (directional constraints) in the CSP
-  arcs : List Arc
-
 
 ||| Parse a single `LParens` token.
 lParens : Grammar _ CSPTok True ()
