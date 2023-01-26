@@ -7,40 +7,37 @@ import Data.List1
 import Data.String
 
 import Dai.CSP.Lexer
+import Dai.CSP.Common
 
 %default total
+
+||| Domain of a variable; lower and upper inclusive bound.
+record Domain where
+  constructor MkDomain
+  lBound : Nat
+  uBound : Nat
 
 ||| The "head" of a constraint, containing the variable indices the constraint
 ||| concerns.
 ||| N.B.: Indexes start at 0.
-public export
 data CDecl : Type where
   CHead : (idxA : Nat) -> (idxB : Nat) -> CDecl
 
-||| A binary tuple of values.
-public export
-data BinTup : Type where
-  Tup : (valA : Nat) -> (valB : Nat) -> BinTup
+||| There are 2 parts to a constraint:
+|||   1) The "head", containing the variable indices the constraint concerns.
+|||   2) The tuples of valid values that the variables may assume.
+data Constraint : Type where
+  MkConstraint : (cIdxs : CDecl) -> (tups : List1 (Nat, Nat)) -> Constraint
 
-  
-
-||| The constituent parts of a CSP:
-|||   - a number of variables
-|||   - variable domains
-|||   - constraints
-public export
-data CSPPart : Type where
-  ||| The number of variables in a CSP.
-  NVars : (n : Nat) -> CSPPart
-
-  ||| Domain of a variable; lower and upper inclusive bound.
-  Domain : (lBound : Nat) -> (uBound : Nat) -> CSPPart
-
-  ||| There are 2 parts to a constraint:
-  |||   1) The "head", containing the variable indices the constraint concerns.
-  |||   2) The tuples of valid values that the variables may assume.
-  Constraint : (cIdxs : CDecl) -> (tups : List1 BinTup) -> CSPPart
-
+||| Convert the given constraint to a pair of arcs.
+||| (arcs are directional, constraints are not)
+export
+constrToArcs : Constraint -> (Arc, Arc)
+constrToArcs (MkConstraint (CHead idxA idxB) tups) =
+  let tups' = forget tups
+      arc1 = MkArc idxA idxB tups'
+      arc2 = MkArc idxB idxA (map swap tups')
+  in (arc1, arc2)
 
 ||| A Constraint Satisfaction Problem.
 public export
@@ -48,13 +45,19 @@ record CSP where
   constructor MkCSP
 
   ||| The number of variables in the CSP
-  noVars : CSPPart
+  noVars : Nat
 
-  ||| The list of variable domains
-  doms : List1 CSPPart
+  -- ||| The list of variable domains
+  -- doms : List1 CSPPart
 
-  ||| The list of constraints for a variable pair
-  cs : List CSPPart
+  ||| The variables in the CSP
+  vars : List Variable
+
+  -- ||| The list of constraints for a variable pair
+  -- cs : List CSPPart
+
+  ||| The arcs (directional constraints) in the CSP
+  arcs : List Arc
 
 
 ||| Parse a single `LParens` token.
@@ -100,21 +103,21 @@ cStart = terminal "Expected the start of a constraint (i.e. a 'c')"
                    _      => Nothing)
 
 ||| The number of variables. This should be the first thing in the CSP file.
-nVars : Grammar _ CSPTok True CSPPart
+nVars : Grammar _ CSPTok True Nat
 nVars =
   do n <- natVal
      newline
-     pure (NVars n)
+     pure n
 
 ||| A domain is the lower bound, a comma, optionally some spaces, and then the
 ||| upper bound.
-domain : Grammar _ CSPTok True CSPPart
+domain : Grammar _ CSPTok True Domain
 domain =
   do lBound <- natVal
      comma
      uBound <- afterMany aSpace natVal
      newline
-     pure (Domain lBound uBound)
+     pure (MkDomain lBound uBound)
 
 ||| The start of a constraint declaration is denoted by a 'c', a left
 ||| parenthesis, the index of the first variable, a comma, optionally some
@@ -133,21 +136,21 @@ cDecl =
 ||| A binary tuple is the first value, a comma, optionally some spaces, and then
 ||| the second value.
 %inline
-binTup : Grammar _ CSPTok True BinTup
+binTup : Grammar _ CSPTok True (Nat, Nat)
 binTup =
   do valA <- natVal
      comma
      valB <- afterMany aSpace natVal
      newline
-     pure (Tup valA valB)
+     pure (valA, valB)
 
 ||| A constraint is a declaration, followed by some binary tuples of values.
-constraint : Grammar _ CSPTok True CSPPart
+constraint : Grammar _ CSPTok True Constraint
 constraint =
   do decl <- cDecl
      tups <- some binTup
      newline
-     pure (Constraint decl tups)
+     pure (MkConstraint decl tups)
 
 ||| A Constraint Satisfaction Problem consists of the number of variables to
 ||| solve, the domains of the variables, and the constraints between them.
@@ -156,7 +159,16 @@ csp =
   do noVars <- afterMany newline $ nVars
      doms   <- afterMany newline $ some domain
      cs     <- many $ afterMany newline constraint
-     pure (MkCSP noVars doms cs)
+     -- generate the indices (list-comps are inclusive) and index the vars
+     let idxs : List Nat := [0..(noVars `minus` 1)]
+     let partVars = map (\i => MkVar i Nothing) idxs
+     -- generate the lists of values from the domain bounds
+     let listDoms : List (List Nat) := map (\d => [d.lBound..d.uBound]) (forget doms)
+     -- finish creating the variables
+     let vars = map (\(pv, d) => pv d) $ zip partVars listDoms
+     -- convert the constraints to arcs and flatten the result
+     let arcs : List Arc := join $ map (\p => [fst p, snd p]) (constrToArcs <$> cs)
+     pure (MkCSP noVars vars arcs)
 
 ||| Parse the given CSP token-stream.
 export
