@@ -1,4 +1,4 @@
-module Dai.Arc
+module Dai.CSP.Common.Arc
 
 %default total
 

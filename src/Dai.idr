@@ -3,8 +3,7 @@ module Dai
 import public Dai.CSP
 
 -- necessary ?
-import public Dai.Arc
-import public Dai.Variable
+import public Dai.CSP.Common
 
 import public Dai.ForwardChecker
 

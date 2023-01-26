@@ -1,4 +1,4 @@
-module Dai.Variable
+module Dai.CSP.Common.Variable
 
 %default total
 
