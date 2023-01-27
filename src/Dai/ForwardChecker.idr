@@ -45,8 +45,18 @@ reviseFutureArcs csp var =
           [] => (consistent, csp)
           (fv :: fvs) =>
             let [arc] = filter (connects fv var) csp.arcs
-                  | [] => ?reviesFA_no_arcs_ERROR
-                  | _ => ?reviesFA_multiarc_ERROR
+                  | [] => ?reviseFA_no_arcs_ERROR
+                  | _  => ?reviseFA_multiarc_ERROR
+
+                (True, arc') = reviseArc arc
+                  | (False, _) => (False, csp)  -- domain wipeout, don't update
+
+                -- caution: arc' contains a pruned Variable, which needs to be
+                --          synchronised/distributed to all relevant places
+                partCSP' = replaceVar csp (arc'.from)
+                fvCSP' = replaceArc partCSP' arc'
+
+                -- now, recall that this was only for `fv`; still need `fvs`
             in ?reviseFutureArcs_rhs_1
 
 ||| Left-branch algorithm for forward-checking.
