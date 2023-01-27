@@ -1,5 +1,7 @@
 module Dai.CSP.Common.Arc
 
+import Dai.CSP.Common.Variable
+
 %default total
 
 ||| A directed constraint
@@ -28,4 +30,21 @@ consistent asmt arc = consistent' asmt arc.validTuples
                                        -- case asmt == vtup of
                                        --      False => consistent' asmt vtups
                                        --      True => True
+
+||| Prune the domains
+revise : Arc -> Arc
+
+------------------------------------------------------------------------
+-- Interfaces & Utils
+
+||| Returns True iff the Arc goes from the first given variable to the second.
+public export
+connects : (v1 : Variable) -> (v2 : Variable) -> (a : Arc) -> Bool
+connects v1 v2 a = a.from == v1.idx  &&  a.to == v2.idx
+
+public export
+Eq Arc where
+  (==) (MkArc from1 to1 tups1) (MkArc from2 to2 tups2) =
+    from1 == from2  &&  to1 == to2  &&  tups1 == tups2
+  -- checking tups for sanity: sometimes we rm stuff from those lists
 

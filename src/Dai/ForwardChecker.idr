@@ -4,15 +4,22 @@ module Dai.ForwardChecker
 import Dai.CSP.Common
 
 ||| Prune future domains for the given variable.
-reviseFutureArcs :  (vars : List Variable)
-                 -> (arcs : List Arc)
+reviseFutureArcs :  (csp : CSP)
                  -> (var : Variable)
                  -> {default True consistent : Bool}
-                 -> ?todo_revFutArc
+                 -> (Bool, CSP)   -- `consistent`, and updated CSP
+reviseFutureArcs csp var =
+  let futVars = filter (/= var) csp.vars
+  in case futVars of
+          [] => (consistent, csp)
+          (fv :: fvs) =>
+            let [arc] = filter (connects fv var) csp.arcs
+                  | [] => ?reviesFA_no_arcs_ERROR
+                  | _ => ?reviesFA_multiarc_ERROR
+            in ?reviseFutureArcs_rhs_1
 
 ||| Left-branch algorithm for forward-checking.
-branchFCLeft :  (vars : List Variable)
-             -> (arcs : List Arc)
+branchFCLeft :  (csp : CSP)
              -> (var : Variable)
              -> (val : Nat)
              -> ?todo_fcLeft
@@ -23,12 +30,12 @@ branchFCRight :  ?todo_fcRight
 ||| Left-Right branching implementation of the forward-checking constraint
 ||| solving algorithm.
 public export
-forwardCheck :  (vars : List Variable)
-             -> (arcs : List Arc)
+forwardCheck :  (csp : CSP)
              -> (soln : List Variable)
-             -> List Variable
-forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
-forwardCheck (var :: vars) arcs soln =
-  let val = pickVal var
-  in ?forwardCheck_rhs_1
+             -> ?todo_fc
+
+--- forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
+--- forwardCheck (var :: vars) arcs soln =
+---   let val = pickVal var
+---   in ?forwardCheck_rhs_1
 
