@@ -9,8 +9,8 @@ public export
 record Arc where
   constructor MkArc
 
-  from : Nat
-  to   : Nat
+  from : Variable
+  to   : Variable
 
   validTuples : List (Nat, Nat)
 
@@ -31,16 +31,13 @@ consistent asmt arc = consistent' asmt arc.validTuples
                                        --      False => consistent' asmt vtups
                                        --      True => True
 
-||| Prune the domains
-revise : Arc -> Arc
-
 ------------------------------------------------------------------------
 -- Interfaces & Utils
 
 ||| Returns True iff the Arc goes from the first given variable to the second.
 public export
 connects : (v1 : Variable) -> (v2 : Variable) -> (a : Arc) -> Bool
-connects v1 v2 a = a.from == v1.idx  &&  a.to == v2.idx
+connects v1 v2 a = a.from == v1  &&  a.to == v2
 
 public export
 Eq Arc where
