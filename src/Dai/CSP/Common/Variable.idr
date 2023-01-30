@@ -1,5 +1,7 @@
 module Dai.CSP.Common.Variable
 
+import Data.List
+
 %default total
 
 ||| A variable in a binary CSP, containing:
@@ -32,6 +34,10 @@ pickVal var = case var.dom of
                    [] => ?pickValDomEmptyERROR
                    (val :: vals) => val
 
+||| Remove the given value from the variable's domain.
+public export
+delVal : (var : Variable) -> (val : Nat) -> Variable
+delVal var val = { dom $= delete val } var
 
 ------------------------------------------------------------------------
 -- Interfaces

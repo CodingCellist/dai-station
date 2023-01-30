@@ -41,8 +41,8 @@ updateVar csp@(MkCSP _ vars arcs) newVar =
        False => csp
        True =>
         let vars' = orderedReplace vars newVar
-            updArcs = map ((flip setArcVar) newVar) arcs
-                              -- ^ only affects the arcs which contain newVar
+            updArcs = map (setArcVar newVar) arcs
+                           -- ^ only affects the arcs which contain newVar
         in { vars := vars', arcs := updArcs } csp
 
 ||| By matching on variable indices, replace the arc in the CSP with the given

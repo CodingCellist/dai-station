@@ -1,6 +1,7 @@
 ||| A simple forward-checking constraint solver.
 module Dai.ForwardChecker
 
+import Data.List
 import Data.SnocList
 
 import Dai.CSP.Common
@@ -133,7 +134,11 @@ branchFCLeft :  (csp : CSP)
 
 
 ||| Right-branch algorithm for forward-checking.
-branchFCRight :  ?todo_fcRight
+branchFCRight :  (varList : List Variable)
+              -> (arcs : List Arc)
+              -> (var : Variable)
+              -> (val : Nat)
+              -> ?branchFCRight_return_ty
 
 
 ||| Left-Right branching implementation of the forward-checking constraint
@@ -152,7 +157,28 @@ branchFCLeft csp var val =
             let -- arc-consistency holds post-revision, so keep going
                 csp' = updateVar revisedCSP assignedVar
                 -- TODO: figure out `varList - var` in fc recursion
+                --       (the `delete` function might help)
             in (True, ?hole)
+
+
+branchFCRight varList arcs var val =
+  let var' = delVal var val
+      arcs' = map (setArcVar var') arcs
+  in case isCons var'.dom of   -- check that domain still has values
+          True =>
+            case reviseFutureArcs (MkCSP (length varList) varList arcs') var' of
+                                -- ^ TODO: change to just varList and arcList
+                 (True, csp') =>
+                    ?branchFCRight_rhs_4
+                 (False, _) =>
+                    -- arc revision wiped out a domain, abort and revert state
+                    ?branchFCRight_rhs_3
+          False =>
+            -- Right-branching wiped out a domain, so use original `var`,
+            -- effectively restoring the value to the domain.
+            -- Note: we only reach this if everything went wrong, i.e. no
+            --       solution exists / could be found
+            ?branchFCRight_rhs_1
 
 
 forwardCheck (MkCSP noVars [] arcs) soln = asList soln

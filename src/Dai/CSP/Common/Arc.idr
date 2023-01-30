@@ -38,8 +38,8 @@ consistent asmt arc = consistent' asmt arc.validTuples
 ||| resulting arc. If neiter the `to` or the `from` variable match, the given
 ||| Arc is returned unchanged.
 public export
-setArcVar : (oArc : Arc) -> (newVar : Variable) -> Arc
-setArcVar oArc newVar =
+setArcVar : (newVar : Variable) -> (oArc : Arc) -> Arc
+setArcVar newVar oArc =
   case oArc.from == newVar of
        True => { from := newVar } oArc
        False =>
