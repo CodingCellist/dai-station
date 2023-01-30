@@ -140,8 +140,8 @@ branchFCRight :  ?todo_fcRight
 ||| solving algorithm.
 public export
 forwardCheck :  (csp : CSP)
-             -> (soln : List Variable)
-             -> ?todo_fc
+             -> (soln : SnocList Variable)
+             -> List Variable
 
 
 branchFCLeft csp var val =
@@ -154,6 +154,13 @@ branchFCLeft csp var val =
                 -- TODO: figure out `varList - var` in fc recursion
             in (True, ?hole)
 
+
+forwardCheck (MkCSP noVars [] arcs) soln = asList soln
+forwardCheck csp@(MkCSP noVars (var :: vars) arcs) soln =
+  let val = pickVal var
+      vars' = branchFCLeft csp var val
+      todo = ?branchFCRight_result
+  in ?forwardCheck_rhs_2
 
 --- forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
 --- forwardCheck (var :: vars) arcs soln =
