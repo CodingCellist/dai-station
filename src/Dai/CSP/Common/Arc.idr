@@ -34,6 +34,19 @@ consistent asmt arc = consistent' asmt arc.validTuples
 ------------------------------------------------------------------------
 -- Interfaces & Utils
 
+||| Set the corresponding variable in the Arc to the new one, returning the
+||| resulting arc. If neiter the `to` or the `from` variable match, the given
+||| Arc is returned unchanged.
+public export
+setArcVar : (oArc : Arc) -> (newVar : Variable) -> Arc
+setArcVar oArc newVar =
+  case oArc.from == newVar of
+       True => { from := newVar } oArc
+       False =>
+          case oArc.to == newVar of
+               True => { to := newVar } oArc
+               False => oArc
+
 ||| Returns True iff the Arc goes from the first given variable to the second.
 public export
 connects : (v1 : Variable) -> (v2 : Variable) -> (a : Arc) -> Bool

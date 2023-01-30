@@ -32,17 +32,24 @@ record CSP where
 ||| By matching on variable indices, replace the variable in the CSP with the
 ||| given one, preserving variable ordering (CSP is unchanged if no matching
 ||| variable is found).
+||| Additionally, since arcs involve variables, update the relevant arcs to
+||| contain the new variable.
 public export
-replaceVar : (csp : CSP) -> (newVar : Variable) -> CSP
-replaceVar csp@(MkCSP _ vars _) newVar =
-  let vars' = orderedReplace vars newVar
-  in { vars := vars' } csp
+updateVar : (csp : CSP) -> (newVar : Variable) -> CSP
+updateVar csp@(MkCSP _ vars arcs) newVar =
+  case elem newVar vars of
+       False => csp
+       True =>
+        let vars' = orderedReplace vars newVar
+            updArcs = map ((flip setArcVar) newVar) arcs
+                              -- ^ only affects the arcs which contain newVar
+        in { vars := vars', arcs := updArcs } csp
 
 ||| By matching on variable indices, replace the arc in the CSP with the given
 ||| one, preserving arc ordering (CSP is unchanged if no matching arc is found).
 public export
-replaceArc : (csp : CSP) -> (newArc : Arc) -> CSP
-replaceArc csp@(MkCSP _ _ arcs) newArc =
+updateArc : (csp : CSP) -> (newArc : Arc) -> CSP
+updateArc csp@(MkCSP _ _ arcs) newArc =
   let arcs' = orderedReplace arcs newArc
   in { arcs := arcs' } csp
 

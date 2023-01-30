@@ -19,10 +19,10 @@ record Variable where
   ||| The domain (list of permitted assignemnts).
   dom : List Nat
 
-||| Assign the given value to the given variable.
+||| Assign the given variable the given value.
 public export
-assign : (val : Nat) -> (var : Variable) -> Variable
-assign val var = { assigned := Just val } var
+assign : (var : Variable) -> (val : Nat) -> Variable
+assign var val = { assigned := Just val } var
 
 ||| Retrieve a value from the given variable's domain.
 ||| (currently just returns the first value; no cleverness here)

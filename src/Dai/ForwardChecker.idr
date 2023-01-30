@@ -70,7 +70,10 @@ reviseFutureVars oFVs@(fv :: fvs) oArcs var prunedFVs =
 
   in (True, prunedFVsArcs)
 
-||| Prune future domains for the given variable.
+||| Prune future domains for the given variable, **propagating the updated arcs
+||| and variables (containing domains)** to the new CSP which is returned.
+|||
+||| @return whether all domains remain intact, and the potentially updated CSP
 reviseFutureArcs :  (csp : CSP)
                  -> (var : Variable)
                  -> {default True consistent : Bool}
@@ -105,31 +108,33 @@ reviseFutureArcs csp var =
               ||| Traverses the `upds` list, calling `orderedReplace` on each
               ||| one while making sure to thread the list of new arcs (which
               ||| may contain updated _and_ original arcs).
+              %inline
               updateArcs : (oArcs : List Arc) -> (upds : List Arc) -> List Arc
-              updateArcs oArcs [] = oArcs
-              updateArcs oArcs (updArc :: updArcs) =
-                let oneUpdate = orderedReplace oArcs updArc
-                in updateArcs oneUpdate updArcs
+              updateArcs oArcs upds = orderedUpdates oArcs upds
 
               ||| Update all the original arcs using the list of updated arcs.
               |||
               ||| Traverses the `upds` list, calling `orderedReplace` on each
               ||| one while making sure to thread the list of new arcs (which
               ||| may contain updated _and_ original arcs).
+              %inline
               updateVars : (oVars : List Variable) -> (upds : List Variable) -> List Variable
-              updateVars oVars [] = oVars
-              updateVars oVars (updVar :: updVars) =
-                let oneUpdate = orderedReplace oVars updVar
-                in updateVars oneUpdate updVars
+              updateVars oVars upds = orderedUpdates oVars upds
+
 
 ||| Left-branch algorithm for forward-checking.
+|||
+||| Returns whether branching+revision was successful, along with the
+||| potentially updated `CSP`.
 branchFCLeft :  (csp : CSP)
              -> (var : Variable)
              -> (val : Nat)
-             -> ?todo_fcLeft
+             -> (Bool, CSP)
+
 
 ||| Right-branch algorithm for forward-checking.
 branchFCRight :  ?todo_fcRight
+
 
 ||| Left-Right branching implementation of the forward-checking constraint
 ||| solving algorithm.
@@ -137,6 +142,18 @@ public export
 forwardCheck :  (csp : CSP)
              -> (soln : List Variable)
              -> ?todo_fc
+
+
+branchFCLeft csp var val =
+  let assignedVar = assign var val
+  in case reviseFutureArcs csp assignedVar of
+          (False, _) => (False, csp)  -- things went wrong, keep csp intact
+          (True, revisedCSP) =>
+            let -- arc-consistency holds post-revision, so keep going
+                csp' = updateVar revisedCSP assignedVar
+                -- TODO: figure out `varList - var` in fc recursion
+            in (True, ?hole)
+
 
 --- forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
 --- forwardCheck (var :: vars) arcs soln =
