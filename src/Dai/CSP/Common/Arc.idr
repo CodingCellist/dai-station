@@ -42,6 +42,5 @@ connects v1 v2 a = a.from == v1  &&  a.to == v2
 public export
 Eq Arc where
   (==) (MkArc from1 to1 tups1) (MkArc from2 to2 tups2) =
-    from1 == from2  &&  to1 == to2  &&  tups1 == tups2
-  -- checking tups for sanity: sometimes we rm stuff from those lists
+    from1 == from2  &&  to1 == to2
 
