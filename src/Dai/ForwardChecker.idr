@@ -94,25 +94,11 @@ reviseFutureArcs csp var =
                 -- filtering out `var`, running the update operation above
                 -- should not change `var` itself, which is what we want!
 
-                ---- [arc] = filter (connects fv var) csp.arcs
-                ----   | [] => ?reviseFA_no_arcs_ERROR
-                ----   | _  => ?reviseFA_multiarc_ERROR
+                -- apply the updates
+                csp' : CSP := { arcs := newCSPArcs, vars := newCSPVars } csp
 
-                ---- (True, arc') = reviseArc arc
-                ----   | (False, _) => (False, csp)  -- domain wipeout, restore orig.
+            in (True, csp')   -- if we somehow got here, it's all good!
 
-                ---- -- caution: arc' contains a pruned Variable, which needs to be
-                ---- --          synchronised/distributed to all relevant places
-                ---- fv' = arc'.from
-                ---- partCSP' = replaceVar csp fv'
-                ---- fvCSP' = replaceArc partCSP' arc'
-
-                ---- --- -- now, recall that this was only for `fv`; still need `fvs`
-                ---- --- -- caution: arc revision affects the fv domains, meaning we
-                ---- --- --          _have_ to sequence the revisions of later arcs
-                ---- --- (True, csp') = reviseFutureArcs fvCSP' var
-                ---- ---   | (False, _) => (False, csp)  -- domain wipeout, restore orig.
-            in ?reviseFutureArcs_rhs_1
             where
               ||| Update all the original arcs using the list of updated arcs.
               |||
