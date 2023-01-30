@@ -49,14 +49,19 @@ reviseFutureArcs csp var =
                   | _  => ?reviseFA_multiarc_ERROR
 
                 (True, arc') = reviseArc arc
-                  | (False, _) => (False, csp)  -- domain wipeout, don't update
+                  | (False, _) => (False, csp)  -- domain wipeout, restore orig.
 
                 -- caution: arc' contains a pruned Variable, which needs to be
                 --          synchronised/distributed to all relevant places
-                partCSP' = replaceVar csp (arc'.from)
+                fv' = arc'.from
+                partCSP' = replaceVar csp fv'
                 fvCSP' = replaceArc partCSP' arc'
 
                 -- now, recall that this was only for `fv`; still need `fvs`
+                -- caution: arc revision affects the fv domains, meaning we
+                --          _have_ to sequence the revisions of later arcs
+                (True, csp') = reviseFutureArcs fvCSP' var
+                  | (False, _) => (False, csp)  -- domain wipeout, restore orig.
             in ?reviseFutureArcs_rhs_1
 
 ||| Left-branch algorithm for forward-checking.
