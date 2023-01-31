@@ -2,17 +2,31 @@
 ||| stdlib, but go in here for now.
 module Dai.CSP.Common.Misc
 
+import Data.Vect
+
 %default total
 
-||| Replace an element in the given list while preserving the ordering of
-||| elements. Assumes the list contains unique elements in a significant order.
-public export
-orderedReplace : Eq a => List a -> a -> List a
-orderedReplace [] y = []
-orderedReplace (x :: xs) y =
-  if x == y
-     then y :: xs
-     else x :: orderedReplace xs y
+namespace List
+  ||| Replace an element in the given list while preserving the ordering of
+  ||| elements. Assumes the list contains unique elements in a significant order.
+  public export
+  orderedReplace : Eq a => List a -> a -> List a
+  orderedReplace [] y = []
+  orderedReplace (x :: xs) y =
+    if x == y
+       then y :: xs
+       else x :: orderedReplace xs y
+
+namespace Vect
+  ||| Replace an element in the given list while preserving the ordering of
+  ||| elements. Assumes the list contains unique elements in a significant order.
+  public export
+  orderedReplace : Eq a => Vect n a -> a -> Vect n a
+  orderedReplace [] y = []
+  orderedReplace (x :: xs) y =
+    if x == y
+       then y :: xs
+       else x :: orderedReplace xs y
 
 ||| Update the given originals using the given list of updated versions.
 |||

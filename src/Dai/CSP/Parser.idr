@@ -3,6 +3,7 @@ module Dai.CSP.Parser
 
 import Text.Parser
 
+import Data.Vect
 import Data.List1
 import Data.String
 
@@ -31,12 +32,21 @@ data Constraint : Type where
 
 ||| Convert the given constraint to a pair of arcs.
 ||| (arcs are directional, constraints are not)
+|||
+||| The list of variables is required to copy the relevant variables into the
+||| arcs.
 export
-constrToArcs : Constraint -> (Arc, Arc)
-constrToArcs (MkConstraint (CHead idxA idxB) tups) =
+constrToArcs : (vars : Vect _ Variable) -> Constraint -> (Arc, Arc)
+constrToArcs vars (MkConstraint (CHead idxA idxB) tups) =
   let tups' = forget tups
-      arc1 = MkArc idxA idxB tups'
-      arc2 = MkArc idxB idxA (map swap tups')
+      (_ ** [varA]) = filter (\v => v.idx == idxA) vars
+          | (0 ** _) => ?constrToArcs_no_varA_ERROR
+          | _        => ?constrToArcs_multivarA_ERROR
+      (_ ** [varB]) = filter (\v => v.idx == idxB) vars
+          | (0 ** _) => ?constrToArcs_no_varB_ERROR
+          | _        => ?constrToArcs_multivarB_ERROR
+      arc1 = MkArc varA varB tups'
+      arc2 = MkArc varB varA (map swap tups')
   in (arc1, arc2)
 
 
@@ -136,19 +146,26 @@ constraint =
 ||| solve, the domains of the variables, and the constraints between them.
 csp : Grammar _ CSPTok True CSP
 csp =
-  do noVars <- afterMany newline $ nVars
-     doms   <- afterMany newline $ some domain
-     cs     <- many $ afterMany newline constraint
+  do -- FIXME: `count` seems to introduce pain
+     -- (S noVars) <- afterMany newline $ nVars
+     --    | Z => ?fixme_csp_ambiguous_elab -- pure (MkCSP Z [] []) -- FIXME
+     -- doms   <- afterMany newline $ count (exactly (S noVars)) domain
+     noVars   <- afterMany newline $ nVars
+     someDoms <- afterMany newline $ some domain
+     cs       <- many $ afterMany newline constraint
+     -- make sure that noVars matches #domains
+     let (Just doms) = toVect noVars (forget someDoms)
+            | Nothing => fail "Declared no. vars =/= no. domains in file"
      -- generate the indices (list-comps are inclusive) and index the vars
-     let idxs : List Nat := [0..(noVars `minus` 1)]
+     let idxs : Vect noVars Nat := map finToNat (range {len=noVars})
      let partVars = map (\i => MkVar i Nothing) idxs
      -- generate the lists of values from the domain bounds
-     let listDoms : List (List Nat) := map (\d => [d.lBound..d.uBound]) (forget doms)
+     let listDoms : Vect noVars (List Nat) := map (\d => [d.lBound..d.uBound]) doms
      -- finish creating the variables
      let vars = map (\(pv, d) => pv d) $ zip partVars listDoms
      -- convert the constraints to arcs and flatten the result
-     let arcs : List Arc := join $ map (\p => [fst p, snd p]) (constrToArcs <$> cs)
-     pure (MkCSP noVars vars arcs)
+     let arcs : List Arc := join $ map (\p => [fst p, snd p]) (constrToArcs vars <$> cs)
+     pure (MkCSP vars arcs)
 
 ||| Parse the given CSP token-stream.
 export

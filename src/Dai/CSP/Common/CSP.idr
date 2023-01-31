@@ -1,5 +1,7 @@
 module Dai.CSP.Common.CSP
 
+import Data.Vect
+
 import Dai.CSP.Common.Misc
 import Dai.CSP.Common.Arc
 import Dai.CSP.Common.Variable
@@ -8,23 +10,11 @@ import Dai.CSP.Common.Variable
 
 ||| A Constraint Satisfaction Problem.
 public export
-record CSP where
-  constructor MkCSP
-
-  ||| The number of variables in the CSP
-  noVars : Nat
-
-  -- ||| The list of variable domains
-  -- doms : List1 CSPPart
-
-  ||| The variables in the CSP
-  vars : List Variable
-
-  -- ||| The list of constraints for a variable pair
-  -- cs : List CSPPart
-
-  ||| The arcs (directional constraints) in the CSP
-  arcs : List Arc
+data CSP : Type where
+  MkCSP :  {0 noVars : Nat}
+        -> (vars : Vect noVars Variable)
+        -> (arcs : List Arc)
+        -> CSP
 
 ------------------------------------------------------------------------
 -- Interfaces & Utils
@@ -36,7 +26,7 @@ record CSP where
 ||| contain the new variable.
 public export
 updateVar : (csp : CSP) -> (newVar : Variable) -> CSP
-updateVar csp@(MkCSP _ vars arcs) newVar =
+updateVar csp@(MkCSP vars arcs) newVar =
   case elem newVar vars of
        False => csp
        True =>
@@ -49,7 +39,7 @@ updateVar csp@(MkCSP _ vars arcs) newVar =
 ||| one, preserving arc ordering (CSP is unchanged if no matching arc is found).
 public export
 updateArc : (csp : CSP) -> (newArc : Arc) -> CSP
-updateArc csp@(MkCSP _ _ arcs) newArc =
+updateArc csp@(MkCSP _ arcs) newArc =
   let arcs' = orderedReplace arcs newArc
   in { arcs := arcs' } csp
 
