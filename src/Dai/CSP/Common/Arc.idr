@@ -57,3 +57,8 @@ Eq Arc where
   (==) (MkArc from1 to1 tups1) (MkArc from2 to2 tups2) =
     from1 == from2  &&  to1 == to2
 
+public export
+Show Arc where
+  show (MkArc from to validTuples) =
+    "<v\{show from.idx} --> v\{show to.idx} :\t\{show validTuples}>"
+

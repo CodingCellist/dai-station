@@ -8,6 +8,12 @@ import Dai.CSP.Common
 
 %default total
 
+-- TODO: DELETE ME ONCE WORKING!!!
+%deprecate
+||| extremely cursed function, possibly put up some wards before using
+crashPoint : (ty : Type) -> (msg : String) -> ty
+crashPoint ty msg = assert_total $ idris_crash {a=ty} msg
+
 ||| Prune the domain of the `from` Variable according to the arc's valid tuples,
 ||| returning whether the domain remains non-empty after the pruning along with
 ||| the updated arc.
@@ -75,6 +81,7 @@ reviseFutureVars oFVs@(fv :: fvs) oArcs var prunedFVs =
 ||| and variables (containing domains)** to the new CSP which is returned.
 |||
 ||| @return whether all domains remain intact, and the potentially updated CSP
+public export
 reviseFutureArcs :  (csp : CSP)
                  -> (var : Variable)
                  -> {default True consistent : Bool}
@@ -224,9 +231,4 @@ forwardCheck varList@(var :: vars) arcs soln =
       (brWasSuccess, (brVars, brArcs)) =
         branchFCRight blVars blArcs var val soln
   in (brWasSuccess, (brVars, brArcs))
-
---- forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
---- forwardCheck (var :: vars) arcs soln =
----   let val = pickVal var
----   in ?forwardCheck_rhs_1
 

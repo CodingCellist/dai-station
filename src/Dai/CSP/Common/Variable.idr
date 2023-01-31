@@ -31,7 +31,7 @@ assign var val = { assigned := Just val } var
 public export
 pickVal : (var : Variable) -> Nat
 pickVal var = case var.dom of
-                   [] => ?pickValDomEmptyERROR
+                   [] => assert_total $ idris_crash "pickVal_dom_empty_ERROR"
                    (val :: vals) => val
 
 ||| Remove the given value from the variable's domain.
