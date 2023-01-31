@@ -8,13 +8,23 @@ import Dai.CSP.Common.Variable
 
 %default total
 
-||| A Constraint Satisfaction Problem.
+||| A Constraint Satisfaction Problem (CSP).
 public export
-data CSP : Type where
-  MkCSP :  {0 noVars : Nat}
-        -> (vars : Vect noVars Variable)
-        -> (arcs : List Arc)
-        -> CSP
+record CSP where
+  constructor MkCSP
+
+  ||| The variables in the CSP.
+  vars : List Variable
+
+  ||| The arcs (i.e. directional constraints) in the CSP.
+  arcs : List Arc
+
+--- implementation for if we want to be cool + precise about stuff in the types:
+--- data CSP : Type where
+---   MkCSP :  {0 noVars : Nat}
+---         -> (vars : Vect noVars Variable)
+---         -> (arcs : List Arc)
+---         -> CSP
 
 ------------------------------------------------------------------------
 -- Interfaces & Utils
