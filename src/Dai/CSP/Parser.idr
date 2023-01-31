@@ -40,11 +40,11 @@ constrToArcs : (vars : List Variable) -> Constraint -> (Arc, Arc)
 constrToArcs vars (MkConstraint (CHead idxA idxB) tups) =
   let tups' = forget tups
       [varA] = filter (\v => v.idx == idxA) vars
-        | [] => ?constrToArcs_no_varA_ERROR
-        | _  => ?constrToArcs_multivarA_ERROR
+        | [] => assert_total $ idris_crash "constrToArcs_no_varA_ERROR"
+        | _  => assert_total $ idris_crash "constrToArcs_multivarA_ERROR"
       [varB] = filter (\v => v.idx == idxB) vars
-        | [] => ?constrToArcs_no_varB_ERROR
-        | _  => ?constrToArcs_multivarB_ERROR
+        | [] => assert_total $ idris_crash "constrToArcs_no_varB_ERROR"
+        | _  => assert_total $ idris_crash "constrToArcs_multivarB_ERROR"
       arc1 = MkArc varA varB tups'
       arc2 = MkArc varB varA (map swap tups')
   in (arc1, arc2)

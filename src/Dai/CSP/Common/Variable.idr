@@ -46,3 +46,8 @@ public export
 Eq Variable where
   (==) (MkVar idxA _ _) (MkVar idxB _ _) = idxA == idxB
 
+public export
+Show Variable where
+  show (MkVar idx Nothing dom) = "v\{show idx}:\t Ø \{show dom}"
+  show (MkVar idx (Just x) dom) = "v\{show idx}:\t \{show x}"
+

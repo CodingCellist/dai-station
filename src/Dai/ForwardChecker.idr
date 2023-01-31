@@ -55,7 +55,7 @@ reviseFutureVars oFVs@(fv :: fvs) oArcs var prunedFVs =
         | [] => reviseFutureVars fvs oArcs var (prunedFVs :< fv)
                 -- ^ no arc found => nothing to revise, so just keep going?
                 --   I think this is fine?...
-        | _  => ?reviseFV_multiarc_ERROR
+        | _  => assert_total $ idris_crash "reviseFV_multiarc_ERROR"
 
       (True, arc') = reviseArc arc
         | (False, _) => (False, (oFVs, oArcs))
