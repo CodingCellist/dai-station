@@ -123,70 +123,107 @@ reviseFutureArcs csp var =
               updateVars oVars upds = orderedUpdates oVars upds
 
 
+%default covering
+
+
 ||| Left-branch algorithm for forward-checking.
 |||
 ||| Returns whether branching+revision was successful, along with the
-||| potentially updated `CSP`.
-branchFCLeft :  (csp : CSP)
+||| potentially updated variables and arcs.
+branchFCLeft :  (vars : List Variable)
+             -> (arcs : List Arc)
              -> (var : Variable)
              -> (val : Nat)
-             -> (Bool, CSP)
+             -> (soln : SnocList Variable)
+             -- -> {auto 0 _ : All IsJust (map (.assigned) (asList soln))}
+             -> (Bool, (List Variable, List Arc))
 
 
 ||| Right-branch algorithm for forward-checking.
-branchFCRight :  (varList : List Variable)
+|||
+||| Delete the given value from the given variable's domain, propagate the
+||| change to the arcs and then revise them. If everything is good, recurse with
+||| the main `forwardCheck` function, otherwise return the unchanged state.
+||| (Having branchFCRight return false is actually just failing, since it is the
+||| final step of the forward-checking algorithm.)
+branchFCRight :  (vars : List Variable)
               -> (arcs : List Arc)
               -> (var : Variable)
               -> (val : Nat)
-              -> ?branchFCRight_return_ty
+              -> (soln : SnocList Variable)
+              -- -> {auto 0 _ : All IsJust (map (.assigned) (asList soln))}
+              -> (Bool, (List Variable, List Arc))
 
 
 ||| Left-Right branching implementation of the forward-checking constraint
 ||| solving algorithm.
+|||
+||| Assign the given value to the given variable, revise the arcs with this new
+||| information, and if all is good recurse with the main `forwardCheck`
+||| function, this time with one fewer variables to use. If arc revision fails,
+||| restore the original/initial/given state.
 public export
-forwardCheck :  (csp : CSP)
+forwardCheck :  (vars : List Variable)
+             -> (arcs : List Arc)
              -> (soln : SnocList Variable)
-             -> List Variable
+             -- -> {auto 0 _ : All IsJust (map (.assigned) (asList soln))}
+             -> (Bool, (List Variable, List Arc))
 
 
-branchFCLeft csp var val =
+branchFCLeft vars arcs var val soln =
   let assignedVar = assign var val
-  in case reviseFutureArcs csp assignedVar of
-          (False, _) => (False, csp)  -- things went wrong, keep csp intact
+      oCSP = MkCSP vars arcs
+  in case reviseFutureArcs oCSP assignedVar of
           (True, revisedCSP) =>
-            let -- arc-consistency holds post-revision, so keep going
-                csp' = updateVar revisedCSP assignedVar
-                -- TODO: figure out `varList - var` in fc recursion
-                --       (the `delete` function might help)
-            in (True, ?hole)
+            let -- arc consistency holds post-revision, so keep going
+                (MkCSP vars' arcs') = updateVar revisedCSP assignedVar
+
+                -- store the assigned variable as part of the solution
+                soln' = soln :< assignedVar
+
+                -- `var` has been assigned, so recurse on the remaining
+                -- unassigned variables (i.e. varList \ var)
+            in forwardCheck (delete assignedVar vars') arcs' soln'
+
+          -- things went wrong, keep given state
+          (False, _) => (False, (vars, arcs))
 
 
-branchFCRight varList arcs var val =
-  let var' = delVal var val
-      arcs' = map (setArcVar var') arcs
-  in case isCons var'.dom of   -- check that domain still has values
+branchFCRight vars arcs var val soln =
+  let rbVar = delVal var val
+  in case isCons rbVar.dom of   -- check that domain still has values
           True =>
-            case reviseFutureArcs (MkCSP (length varList) varList arcs') var' of
-                                -- ^ TODO: change to just varList and arcList
-                 (True, csp') =>
-                    ?branchFCRight_rhs_4
-                 (False, _) =>
-                    -- arc revision wiped out a domain, abort and revert state
-                    ?branchFCRight_rhs_3
+            -- domain is still non-empty, propagate change and revise
+            let (MkCSP rbVars rbArcs) = updateVar (MkCSP vars arcs) rbVar
+            in case reviseFutureArcs (MkCSP rbVars rbArcs) rbVar of
+
+                    (True, revised) =>
+                       -- arc consistency holds post-assignment + revision, so
+                       -- recurse with this new information propagated to the
+                       -- relevant lists
+                       forwardCheck revised.vars revised.arcs soln
+
+                    (False, _) =>
+                       -- arc-revision wiped out a domain, abort and preserve
+                       -- the original/initial/given state
+                       (False, (vars, arcs))
+
           False =>
             -- Right-branching wiped out a domain, so use original `var`,
             -- effectively restoring the value to the domain.
             -- Note: we only reach this if everything went wrong, i.e. no
             --       solution exists / could be found
-            ?branchFCRight_rhs_1
+            (False, (vars, arcs))
 
 
-forwardCheck (MkCSP noVars [] arcs) soln = asList soln
-forwardCheck csp@(MkCSP noVars (var :: vars) arcs) soln =
-  let val = pickVal var
-      vars' = branchFCLeft csp var val
-      todo = ?branchFCRight_result
-  in ?forwardCheck_rhs_2
+forwardCheck [] arcs soln = (True, (asList soln, arcs))
+forwardCheck varList@(var :: vars) arcs soln =
+  let val   = pickVal var   -- we've already picked a variable: the first one
+      (blWasSuccess, (blVars, blArcs)) =
+        branchFCLeft varList arcs var val soln
+      (brWasSuccess, (brVars, brArcs)) =
+        branchFCRight blVars blArcs var val soln
+  in (brWasSuccess, (brVars, brArcs))
 
 --- forwardCheck [] arcs soln = soln  -- assumes all vars in soln are assigned
 --- forwardCheck (var :: vars) arcs soln =
