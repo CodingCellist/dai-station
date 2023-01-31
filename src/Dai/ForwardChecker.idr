@@ -225,10 +225,20 @@ branchFCRight vars arcs var val soln =
 
 forwardCheck [] arcs soln = (True, (asList soln, arcs))
 forwardCheck varList@(var :: vars) arcs soln =
-  let val   = pickVal var   -- we've already picked a variable: the first one
-      (blWasSuccess, (blVars, blArcs)) =
-        branchFCLeft varList arcs var val soln
-      (brWasSuccess, (brVars, brArcs)) =
-        branchFCRight blVars blArcs var val soln
-  in (brWasSuccess, (brVars, brArcs))
+  case correct soln of
+       True =>
+          crashPoint (Bool,List Variable,List Arc)
+            $ "SOLUTION WITHOUT STOPPING:\n\{show soln}\n\nREMAINING VARS:\n\{show varList}"
+       False =>
+          let val   = pickVal var   -- we've already picked a variable: the first one
+              (blWasSuccess, (blVars, blArcs)) =
+                branchFCLeft varList arcs var val soln
+              (brWasSuccess, (brVars, brArcs)) =
+                branchFCRight blVars blArcs var val soln
+          in (brWasSuccess, (brVars, brArcs))
+  where
+    correct : SnocList Variable -> Bool
+    correct (((([<] :< a) :< b) :< c) :< d) =
+      a.assigned == Just 1 && b.assigned == Just 3 && c.assigned == Just 0 && d.assigned == Just 2
+    correct _ = False
 
