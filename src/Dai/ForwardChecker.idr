@@ -5,6 +5,7 @@ import Data.List
 import Data.SnocList
 
 import Dai.CSP.Common
+import Dai.ArcRevisor
 
 %default total
 

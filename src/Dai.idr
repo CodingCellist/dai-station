@@ -9,7 +9,8 @@ import public Dai.CSP
 -- necessary ?
 import public Dai.CSP.Common
 
-import public Dai.ForwardChecker
+---- import public Dai.ForwardChecker
+import public Dai.ArcRevisor
 
 public export
 solve :  (cspFPath : String)
@@ -29,19 +30,20 @@ solve cspFPath =
                 ###########################
 
                 """
-     let (True, (soln, _)) = forwardCheck csp.vars csp.arcs [<]
-        | (False, (nonSoln, arcs)) =>
-              putStrLn $ """
-                         No solution found  :'(
-                         ##### POST-FC #####
-                         ----- Non-solution -----
-                         \{prettyListShow nonSoln}
-                         ----- Arcs -----
-                         \{prettyListShow arcs}
-                         ###################
-                         """
+     ---- let (True, (soln, _)) = forwardCheck csp.vars csp.arcs [<]
+     ----   | (False, (nonSoln, arcs)) =>
+     ----         putStrLn $ """
+     ----                    No solution found  :'(
+     ----                    ##### POST-FC #####
+     ----                    ----- Non-solution -----
+     ----                    \{prettyListShow nonSoln}
+     ----                    ----- Arcs -----
+     ----                    \{prettyListShow arcs}
+     ----                    ###################
+     ----                    """
+
+     let Just (soln, _) = forwardCheck csp.vars csp.arcs csp.vars csp.arcs
+                          -- params: original vars+arcs^ ^solved parts
+        | Nothing => putStrLn "No solution found  :'("
      putStrLn $ "Found a solution!\n\{show soln}"
-  where
-    prettyListShow : Show a => List a -> String
-    prettyListShow xs = "[ " ++ foldr (++) "" (intersperse "\n, " (map show xs)) ++ "\n]"
 

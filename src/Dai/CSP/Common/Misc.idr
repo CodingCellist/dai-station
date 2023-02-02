@@ -2,7 +2,7 @@
 ||| stdlib, but go in here for now.
 module Dai.CSP.Common.Misc
 
-import Data.Vect
+import Data.List
 
 %default total
 
@@ -10,21 +10,25 @@ import Data.Vect
 ||| elements. Assumes the list contains unique elements in a significant order.
 public export
 orderedReplace : Eq a => List a -> a -> List a
-orderedReplace [] y = []
-orderedReplace (x :: xs) y =
-  if x == y
-     then y :: xs
-     else x :: orderedReplace xs y
+orderedReplace [] new = []
+orderedReplace (old :: xs) new =
+  if old == new
+     then new :: xs
+     else old :: orderedReplace xs new
 
 ||| Update the given originals using the given list of updated versions.
 |||
 ||| Traverses the `upds` list, calling `orderedReplace` on each element while
 ||| making sure to thread the new list of elements (which may contain updated
-||| _and_ original arcs).
+||| _and_ original elements).
 public export
-orderedUpdates : Eq a => (origs : List a) -> (upds : List a) -> List a
-orderedUpdates origs [] = origs
-orderedUpdates origs (upd :: upds) =
-  let oneUpdate = orderedReplace origs upd
+orderedUpdates : Eq a => (todo : List a) -> (upds : List a) -> List a
+orderedUpdates done [] = done
+orderedUpdates todo (upd :: upds) =
+  let oneUpdate = orderedReplace todo upd
   in orderedUpdates oneUpdate upds
+
+export
+prettyListShow : Show a => List a -> String
+prettyListShow xs = "[ " ++ foldr (++) "" (intersperse "\n, " (map show xs)) ++ "\n]"
 

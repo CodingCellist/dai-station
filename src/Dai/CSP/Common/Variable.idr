@@ -1,6 +1,7 @@
 module Dai.CSP.Common.Variable
 
 import Data.List
+import Data.Maybe
 
 %default total
 
@@ -26,6 +27,21 @@ public export
 assign : (var : Variable) -> (val : Nat) -> Variable
 assign var val = { assigned := Just val } var
 
+||| Unassign the given variable (i.e. set its `assigned` status to `Nothing`).
+public export
+unassign : (var : Variable) -> Variable
+unassign var = { assigned := Nothing } var
+
+||| Select the first variable which isn't assigned. Crashes if an empty list
+||| was passed or is reached.
+public export
+selectVar : List Variable -> Variable
+selectVar [] = assert_total $ idris_crash "selectVar given/reached empty list"
+selectVar (v :: vs) =
+  if isNothing v.assigned
+     then v
+     else selectVar vs
+
 ||| Retrieve a value from the given variable's domain.
 ||| (currently just returns the first value; no cleverness here)
 public export
@@ -34,10 +50,17 @@ pickVal var = case var.dom of
                    [] => assert_total $ idris_crash "pickVal_dom_empty_ERROR"
                    (val :: vals) => val
 
+-- TODO: rename properly
+%inline
+public export
+selectVal : Variable -> Nat
+selectVal = pickVal
+
 ||| Remove the given value from the variable's domain.
 public export
 delVal : (var : Variable) -> (val : Nat) -> Variable
 delVal var val = { dom $= delete val } var
+
 
 ------------------------------------------------------------------------
 -- Interfaces
