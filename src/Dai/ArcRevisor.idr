@@ -9,6 +9,9 @@ import Debug.Trace
 
 import Dai.CSP.Common
 
+-- omit the footgun; use `getDom` instead
+%hide (.dom)
+
 %default total
 
 -- FIXME
@@ -24,7 +27,7 @@ findArc :  (v1 : Variable)
 findArc v1 v2 arcs =
   case filter (connects v1 v2) arcs of
        [] => Nothing
-       (arc :: []) => Just arc
+       (arc :: []) => trace "\tFound arc \{show arc}" $ Just arc
        (arc :: (_ :: _)) => assert_total $ idris_crash "findArc_multiarc_ERROR"
 
 -- does the given value have any support in the given variable's domain, wrt.
@@ -33,17 +36,38 @@ hasSupport :  (theVal : Nat)
            -> (var : Variable)
            -> (validTups : List (Nat, Nat))
            -> Bool
-
 hasSupport theVal var validTups =
-  let tups = map (\domVal => (theVal, domVal)) var.dom
-  in any (== True) $ map (\t => elem t validTups) tups
+  let pairings : List (Nat, Nat) = map (MkPair theVal) (getDom var)
+  in anyValid pairings validTups
+  where
+    isValid : (pairing : (Nat, Nat)) -> List (Nat, Nat) -> Lazy Bool
+    isValid pairing [] = trace "\tNo support found for \{show pairing}" $ False
+    isValid pairing (valid :: valids) =
+      ---- pairing == valid || isValid pairing valids
+      case pairing == valid of
+           True => trace "\tPairing \{show pairing} supported by \{show valid}" True
+           False => isValid pairing valids
+
+    anyValid : (pairings : List (Nat, Nat)) -> List (Nat, Nat) -> Lazy Bool
+    anyValid _ [] = False   -- no more valids to test against, so no
+    anyValid [] (valid :: valids) = False   -- no, none of them were valid
+    anyValid (pair :: pairs) (valid :: valids) =
+      -- if the first pairing is fine, we're done; if not, try the next one
+      isValid pair (valid :: valids) || anyValid pairs (valid :: valids)
+
+----    anySupport cand [] = False
+----    anySupport cand (valid :: valids) = cand == valid || anySupport cand valids
+
+--- hasSupport theVal var validTups =
+---   let tups = map (\domVal => (theVal, domVal)) var.dom
+---   in any (== True) $ map (\t => elem t validTups) tups
 
 reviseDom :  (fvDom : List Nat)
           -> (currVar : Variable)
           -> (validTups : List (Nat, Nat))
           -> (newDom : SnocList Nat)
           -> List Nat
-reviseDom [] currVar validTups newDom = asList newDom
+reviseDom [] currVar validTups newDom = toList newDom
 reviseDom (fv :: fvs) currVar validTups newDom =
   if hasSupport fv currVar validTups
      then reviseDom fvs currVar validTups (newDom :< fv)
@@ -52,14 +76,14 @@ reviseDom (fv :: fvs) currVar validTups newDom =
 fcRevise :  (fvToVar : Arc)
          -> Maybe Arc
 fcRevise fvToVar@(MkArc futVar currVar arcTups) =
-  case reviseDom futVar.dom currVar arcTups [<] of
+  case reviseDom (getDom futVar) currVar arcTups [<] of
        [] => -- revised domain would be empty, ABORT!!
              Nothing
 
        revisedDom@(_ :: _) =>
              -- successfully revised domain, update variable and remember to
              -- update variable in the arc as well
-             let revisedVar : Variable = { dom := revisedDom } futVar
+             let revisedVar : Variable = trace "\tRevised domain is \{show revisedDom}" $ { dom := revisedDom } futVar
                  revisedArc : Arc = { from := revisedVar } fvToVar
              in Just revisedArc
 
@@ -91,12 +115,12 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                   case fcRevise arc of
                        Nothing =>
                           -- arc revision wiped out a domain, ABORT!!
-                          trace "\nWIPEOUT\n" $ Nothing
+                          trace "\tWiped out domain of \{show fv}, ABORT\n" $ Nothing
 
                        (Just revisedArc) =>
                           -- arc revision succeeded, the new arc contains the revised v
                           let fv' = revisedArc.from
-                              rArcs' = map (setArcVar fv') rArcs
+                              rArcs' = trace "\tSuccessfully revised \{show fv} to \{show fv'}" $ map (setArcVar fv') rArcs
                           in fcReviseFutureArcs fvs rArcs' currVar (newVars :< fv')
 
   %default covering
@@ -118,26 +142,29 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                 -> (currVal : Nat)
                 -> Maybe (List Variable, List Arc)
 
+
   forwardCheck vars arcs =
     if all isJust $ map (.assigned) vars
-       then trace "\n\t /!\\ FC has complete assignment: \{show vars}\n" $ Just (vars, arcs)
-       else let var = trace "\nFC called with \{show vars}\n\{show arcs}" $ selectVar vars
-                val = selectVal var
+       --- then trace "\n\t /!\\ FC has complete assignment: \{show vars}\n\n" $ Just (vars, arcs)
+       then assert_total $ idris_crash "FOUND SOLUTION:\n\{prettyListShow vars}\n"
+       else let var = trace "\n¤ FC called with \{show vars}\n\{prettyListShow arcs}\n\n" $ selectVar vars
+                val = trace "FC selects var \{show var}" $ selectVal var
 
                 -- FIXME: sanity-check; remove once working
-                True = length vars == length oVars
+                True = trace "FC selects \{show var} := \{show val}\n" $ length vars == length oVars
                   | False => assert_total $ idris_crash "Gained a variable"
 
             in case branchFCLeft vars arcs var val of
                     Nothing => branchFCRight vars arcs var val
                     (Just (vars', arcs')) => branchFCRight vars' arcs' var val
 
+
   branchFCLeft vars arcs currVar currVal =
-    let assignedVar = assign currVar currVal
+    let assignedVar = trace "BL called with \{show vars}\t\{show currVar}:=\{show currVal}\n" $ assign currVar currVal
         -- replace the variable with its assigned version
-        vars' = orderedReplace vars assignedVar
+        vars' = trace "BL assigns \{show currVar} := \{show currVal}\n" $ orderedReplace vars assignedVar
         -- and do the same for the arcs (no effect on uninvolved arcs)
-        arcs' = map (setArcVar assignedVar) arcs
+        arcs' = trace "BL calls revise on \{show vars'}" $ map (setArcVar assignedVar) arcs
     in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
             Nothing =>
                 -- arc revision wiped out a domain, ABORT!!
@@ -150,9 +177,10 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                     arcs'' = orderedUpdates arcs' rArcs
                 in trace "\n\tBL calls FC with \{show vars''}\n\{prettyListShow arcs''}\n" $ forwardCheck vars'' arcs''
 
+
   branchFCRight vars arcs currVar currVal =
-    let smallerVar = trace "BR called with \{show vars}\n\{show arcs}\nDeleting \{show currVal} from \{show currVar}\n" $ delVal currVar currVal
-    in case smallerVar.dom of
+    let smallerVar = trace "BR called with \{show vars}\nBR deletes \{show currVal} from \{show currVar}\n" $ delVal currVar currVal
+    in case (getDom smallerVar) of
             [] => -- removing the value destroys the domain, ABORT!!
                   Nothing
 

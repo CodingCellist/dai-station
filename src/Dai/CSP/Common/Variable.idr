@@ -22,6 +22,14 @@ record Variable where
   ||| The domain (list of permitted assignemnts).
   dom : List Nat
 
+||| /!\ IF the variable is UNASSIGNED, returns the domain of the variable;
+||| /!\ IF the variable is ASSIGNED, returns a SINGLETON LIST with the assigned
+||| /!\   value!
+public export
+getDom : Variable -> List Nat
+getDom (MkVar _ Nothing dom) = dom
+getDom (MkVar _ (Just val) _) = [val]
+
 ||| Assign the given variable the given value.
 public export
 assign : (var : Variable) -> (val : Nat) -> Variable
@@ -71,6 +79,6 @@ Eq Variable where
 
 public export
 Show Variable where
-  show (MkVar idx Nothing dom) = "v\{show idx}:\t Ø \{show dom}"
-  show (MkVar idx (Just x) dom) = "v\{show idx}:\t \{show x}"
+  show (MkVar idx Nothing dom) = "v\{show idx}: Ø \{show dom}"
+  show (MkVar idx (Just x) dom) = "v\{show idx}: \{show x}"
 
