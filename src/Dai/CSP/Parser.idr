@@ -1,3 +1,9 @@
+{-
+ - A constraint solver written in Idris2
+ - Copyright (c) 2023, Thomas E. Hansen (CodingCellist)
+ - SPDX-License-Identifier: BSD-3-Clause
+ -}
+
 ||| Parser for the binary CSP files found in `test`.
 module Dai.CSP.Parser
 

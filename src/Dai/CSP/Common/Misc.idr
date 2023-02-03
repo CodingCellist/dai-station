@@ -1,3 +1,9 @@
+{-
+ - A constraint solver written in Idris2
+ - Copyright (c) 2023, Thomas E. Hansen (CodingCellist)
+ - SPDX-License-Identifier: BSD-3-Clause
+ -}
+
 ||| Miscellaneous utils which probably should be better organised/added to the
 ||| stdlib, but go in here for now.
 module Dai.CSP.Common.Misc
