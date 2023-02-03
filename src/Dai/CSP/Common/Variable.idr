@@ -20,6 +20,8 @@ record Variable where
   assigned : Maybe Nat
 
   ||| The domain (list of permitted assignemnts).
+  |||
+  ||| N.B. You may want `getDom` instead.
   dom : List Nat
 
 ||| /!\ IF the variable is UNASSIGNED, returns the domain of the variable;

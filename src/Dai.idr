@@ -21,8 +21,7 @@ solve cspFPath =
      (Right csp) <- parseFile cspFHandle
         | Left errMsg => putStrLn $ "----- PARSEFILE ERROR -----\n\{errMsg}"
 
-     let Just (soln, Nothing) = forwardCheck csp.vars csp.arcs csp.vars (Just csp.arcs)
-                                -- params: original vars+arcs^ ^solved parts
+     let Just (soln, Nothing) = forwardCheck csp.vars (Just csp.arcs)
         | _ => putStrLn "No solution found  :'("
 
      putStrLn $ "Found a solution!\n\{prettyListShow soln}"

@@ -75,130 +75,127 @@ fcRevise fvToVar@(MkArc futVar currVar arcTups) =
                  revisedArc : Arc = { from := revisedVar } fvToVar
              in Just revisedArc
 
--- `oArcs` contain the original arcs given to the function on initial call
---    ^ should NEVER be UPDATED in any way!!
--- `rArcs` contain the continually revised arcs, which are updated as we go
-parameters (oVars : List Variable) (oArcs : List Arc)
-  fcReviseFutureArcs :  (vars  : List Variable)
-                     -> (rArcs : List Arc)
-                     -> (currVar : Variable)
-                     -> (newVars : SnocList Variable)
-                     -> Maybe (List Variable, List Arc)
 
-  fcReviseFutureArcs [] rArcs currVar newVars =
-    -- we've exhausted the list of variables without quitting in the process, this
-    -- must mean everything went well
-    Just (asList newVars, rArcs)
+fcReviseFutureArcs :  (vars  : List Variable)
+                   -> (rArcs : List Arc)
+                   -> (currVar : Variable)
+                   -> (newVars : SnocList Variable)
+                   -> Maybe (List Variable, List Arc)
 
-  fcReviseFutureArcs (fv :: fvs) rArcs currVar newVars =
-    if fv == currVar
-       then -- we don't revise the variable with itself, but we _do_ remember to
-            -- keep it!
-            fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
-       else -- if there is a relevant arc in the _revised_ arcs, try to revise
-            -- it
-            case findArc fv currVar rArcs of
-                 Nothing => fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
-                 Just arc =>
-                  case fcRevise arc of
-                       Nothing =>
-                          -- arc revision wiped out a domain, ABORT!!
-                          Nothing
+fcReviseFutureArcs [] rArcs currVar newVars =
+  -- we've exhausted the list of variables without quitting in the process, this
+  -- must mean everything went well
+  Just (asList newVars, rArcs)
 
-                       (Just revisedArc) =>
-                          -- arc revision succeeded, the new arc contains the revised v
-                          let fv' = revisedArc.from
-                              rArcs' = map (setArcVar fv') rArcs
-                          in fcReviseFutureArcs fvs rArcs' currVar (newVars :< fv')
+fcReviseFutureArcs (fv :: fvs) rArcs currVar newVars =
+  if fv == currVar
+     then -- we don't revise the variable with itself, but we _do_ remember to
+          -- keep it!
+          fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
+     else -- if there is a relevant arc in the _revised_ arcs, try to revise
+          -- it
+          case findArc fv currVar rArcs of
+               Nothing => fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
+               Just arc =>
+                case fcRevise arc of
+                     Nothing =>
+                        -- arc revision wiped out a domain, ABORT!!
+                        Nothing
 
-  %default covering
+                     (Just revisedArc) =>
+                        -- arc revision succeeded, the new arc contains the revised v
+                        let fv' = revisedArc.from
+                            rArcs' = map (setArcVar fv') rArcs
+                        in fcReviseFutureArcs fvs rArcs' currVar (newVars :< fv')
 
-  export
-  forwardCheck :  (vars : List Variable)
-               -> (arcs : Maybe (List Arc))
-               -> Maybe (List Variable, Maybe (List Arc))
+%default covering
 
-  branchFCLeft :  (vars : List Variable)
-               -> (arcs : Maybe (List Arc))
-               -> (currVar : Variable)
-               -> (currVal : Nat)
-               -> Maybe (List Variable, Maybe (List Arc))
+export
+forwardCheck :  (vars : List Variable)
+             -> (arcs : Maybe (List Arc))
+             -> Maybe (List Variable, Maybe (List Arc))
 
-  branchFCRight :  (vars : List Variable)
-                -> (arcs : Maybe (List Arc))
-                -> (currVar : Variable)
-                -> (currVal : Nat)
-                -> Maybe (List Variable, Maybe (List Arc))
+branchFCLeft :  (vars : List Variable)
+             -> (arcs : Maybe (List Arc))
+             -> (currVar : Variable)
+             -> (currVal : Nat)
+             -> Maybe (List Variable, Maybe (List Arc))
 
-  ------------------------------------------------------------------------
-  -- Forward-Check
+branchFCRight :  (vars : List Variable)
+              -> (arcs : Maybe (List Arc))
+              -> (currVar : Variable)
+              -> (currVal : Nat)
+              -> Maybe (List Variable, Maybe (List Arc))
 
-  -- if we've lost the arcs, we must be done (we can't revise anything)
-  forwardCheck vars Nothing = Just (vars, Nothing)
+------------------------------------------------------------------------
+-- Forward-Check
 
-  -- check if we're done, and if so remove the arcs; otherwise keep going
-  forwardCheck vars (Just arcs) =
-    if all isJust $ map (.assigned) vars
-       then Just (vars, Nothing)
-       else let var = selectVar vars
-                val = selectVal var
-            in case branchFCLeft vars (Just arcs) var val of
-                    Nothing => branchFCRight vars (Just arcs) var val
-                    (Just (vars', Nothing)) => branchFCRight vars' Nothing var val
-                    (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') var val
+-- if we've lost the arcs, we must be done (we can't revise anything)
+forwardCheck vars Nothing = Just (vars, Nothing)
 
-  ------------------------------------------------------------------------
-  -- Branch Left
+-- check if we're done, and if so remove the arcs; otherwise keep going
+forwardCheck vars (Just arcs) =
+  if all isJust $ map (.assigned) vars
+     then Just (vars, Nothing)
+     else let var = selectVar vars
+              val = selectVal var
+          in case branchFCLeft vars (Just arcs) var val of
+                  Nothing => branchFCRight vars (Just arcs) var val
+                  (Just (vars', Nothing)) => branchFCRight vars' Nothing var val
+                  (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') var val
 
-  -- if we've lost the arcs, we must be done (we can't revise anything)
-  branchFCLeft vars Nothing currVar currVal = Just (vars, Nothing)
+------------------------------------------------------------------------
+-- Branch Left
 
-  -- otherwise, proceed with assignment and arc revision
-  branchFCLeft vars (Just arcs) currVar currVal =
-    let assignedVar = assign currVar currVal
-        -- replace the variable with its assigned version
-        vars' = orderedReplace vars assignedVar
-        -- and do the same for the arcs (no effect on uninvolved arcs)
-        arcs' = map (setArcVar assignedVar) arcs
-    in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
-            Nothing =>
-                -- arc revision wiped out a domain, ABORT!!
+-- if we've lost the arcs, we must be done (we can't revise anything)
+branchFCLeft vars Nothing currVar currVal = Just (vars, Nothing)
+
+-- otherwise, proceed with assignment and arc revision
+branchFCLeft vars (Just arcs) currVar currVal =
+  let assignedVar = assign currVar currVal
+      -- replace the variable with its assigned version
+      vars' = orderedReplace vars assignedVar
+      -- and do the same for the arcs (no effect on uninvolved arcs)
+      arcs' = map (setArcVar assignedVar) arcs
+  in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
+          Nothing =>
+              -- arc revision wiped out a domain, ABORT!!
+              Nothing
+
+          (Just (rVars, rArcs)) =>
+              let -- replace the variables with their revised versions
+                  vars'' = orderedUpdates vars' rVars
+                  -- and likewise for the arcs
+                  arcs'' = orderedUpdates arcs' rArcs
+              in forwardCheck vars'' (Just arcs'')
+
+
+------------------------------------------------------------------------
+-- Branch Right
+
+-- if we've lost the arcs, we must be done (we can't revise anything)
+branchFCRight vars Nothing currVar currVal = Just (vars, Nothing)
+
+-- otherwise, proceed with removing the bad value and revising the arcs
+branchFCRight vars (Just arcs) currVar currVal =
+  let smallerVar = delVal currVar currVal
+  in case (getDom smallerVar) of
+          [] => -- removing the value destroys the domain, ABORT!!
                 Nothing
 
-            (Just (rVars, rArcs)) =>
-                let -- replace the variables with their revised versions
-                    vars'' = orderedUpdates vars' rVars
-                    -- and likewise for the arcs
-                    arcs'' = orderedUpdates arcs' rArcs
-                in forwardCheck vars'' (Just arcs'')
-
-
-  ------------------------------------------------------------------------
-  -- Branch Right
-
-  -- if we've lost the arcs, we must be done (we can't revise anything)
-  branchFCRight vars Nothing currVar currVal = Just (vars, Nothing)
-
-  -- otherwise, proceed with removing the bad value and revising the arcs
-  branchFCRight vars (Just arcs) currVar currVal =
-    let smallerVar = delVal currVar currVal
-    in case (getDom smallerVar) of
-            [] => -- removing the value destroys the domain, ABORT!!
-                  Nothing
-
-            (_ :: _) =>
-                  let -- replace the variable with its smaller domain version
-                      vars' = orderedReplace vars smallerVar
-                      -- and do the same for the arcs (no effect on uninvolved arcs)
-                      arcs' = map (setArcVar smallerVar) arcs
-                  in case fcReviseFutureArcs vars' arcs' smallerVar [<] of
-                          Nothing =>
-                              -- arc revision wiped out a domain, ABORT!!
-                              Nothing
-                          (Just (rVars, rArcs)) =>
-                              let -- replace the variables with their revised versions
-                                  vars'' = orderedUpdates vars' rVars
-                                  -- and similar for the arcs
-                                  arcs'' = orderedUpdates arcs' rArcs
-                              in forwardCheck vars'' (Just arcs'')
+          (_ :: _) =>
+                let -- replace the variable with its smaller domain version
+                    vars' = orderedReplace vars smallerVar
+                    -- and do the same for the arcs (no effect on uninvolved arcs)
+                    arcs' = map (setArcVar smallerVar) arcs
+                in case fcReviseFutureArcs vars' arcs' smallerVar [<] of
+                        Nothing =>
+                            -- arc revision wiped out a domain, ABORT!!
+                            Nothing
+                        (Just (rVars, rArcs)) =>
+                            let -- replace the variables with their revised versions
+                                vars'' = orderedUpdates vars' rVars
+                                -- and similar for the arcs
+                                arcs'' = orderedUpdates arcs' rArcs
+                            in forwardCheck vars'' (Just arcs'')
 
