@@ -127,26 +127,28 @@ parameters (oVars : List Variable) (oArcs : List Arc)
 
   export
   forwardCheck :  (vars : List Variable)
-               -> (arcs : List Arc)
-               -> Maybe (List Variable, List Arc)
+               -> (arcs : Maybe (List Arc))
+               -> Maybe (List Variable, Maybe (List Arc))
 
   branchFCLeft :  (vars : List Variable)
-               -> (arcs : List Arc)
+               -> (arcs : Maybe (List Arc))
                -> (currVar : Variable)
                -> (currVal : Nat)
-               -> Maybe (List Variable, List Arc)
+               -> Maybe (List Variable, Maybe (List Arc))
 
   branchFCRight :  (vars : List Variable)
-                -> (arcs : List Arc)
+                -> (arcs : Maybe (List Arc))
                 -> (currVar : Variable)
                 -> (currVal : Nat)
-                -> Maybe (List Variable, List Arc)
+                -> Maybe (List Variable, Maybe (List Arc))
 
 
-  forwardCheck vars arcs =
+  forwardCheck vars Nothing = Just (vars, Nothing)
+  forwardCheck vars (Just arcs) =
     if all isJust $ map (.assigned) vars
        --- then trace "\n\t /!\\ FC has complete assignment: \{show vars}\n\n" $ Just (vars, arcs)
-       then assert_total $ idris_crash "FOUND SOLUTION:\n\{prettyListShow vars}\n"
+       ---- then assert_total $ idris_crash "FOUND SOLUTION:\n\{prettyListShow vars}\n"
+       then Just (vars, Nothing)
        else let var = trace "\n¤ FC called with \{show vars}\n\{prettyListShow arcs}\n\n" $ selectVar vars
                 val = trace "FC selects var \{show var}" $ selectVal var
 
@@ -154,12 +156,14 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                 True = trace "FC selects \{show var} := \{show val}\n" $ length vars == length oVars
                   | False => assert_total $ idris_crash "Gained a variable"
 
-            in case branchFCLeft vars arcs var val of
-                    Nothing => branchFCRight vars arcs var val
-                    (Just (vars', arcs')) => branchFCRight vars' arcs' var val
+            in case branchFCLeft vars (Just arcs) var val of
+                    Nothing => branchFCRight vars (Just arcs) var val
+                    (Just (vars', Nothing)) => branchFCRight vars' Nothing var val
+                    (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') var val
 
 
-  branchFCLeft vars arcs currVar currVal =
+  branchFCLeft vars Nothing currVar currVal = Just (vars, Nothing)
+  branchFCLeft vars (Just arcs) currVar currVal =
     let assignedVar = trace "BL called with \{show vars}\t\{show currVar}:=\{show currVal}\n" $ assign currVar currVal
         -- replace the variable with its assigned version
         vars' = trace "BL assigns \{show currVar} := \{show currVal}\n" $ orderedReplace vars assignedVar
@@ -175,10 +179,11 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                     vars'' = orderedUpdates vars' rVars
                     -- and likewise for the arcs
                     arcs'' = orderedUpdates arcs' rArcs
-                in trace "\n\tBL calls FC with \{show vars''}\n\{prettyListShow arcs''}\n" $ forwardCheck vars'' arcs''
+                in trace "\n\tBL calls FC with \{show vars''}\n\{prettyListShow arcs''}\n" $ forwardCheck vars'' (Just arcs'')
 
 
-  branchFCRight vars arcs currVar currVal =
+  branchFCRight vars Nothing currVar currVal = Just (vars, Nothing)
+  branchFCRight vars (Just arcs) currVar currVal =
     let smallerVar = trace "BR called with \{show vars}\nBR deletes \{show currVal} from \{show currVar}\n" $ delVal currVar currVal
     in case (getDom smallerVar) of
             [] => -- removing the value destroys the domain, ABORT!!
@@ -198,5 +203,5 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                                   vars'' = orderedUpdates vars' rVars
                                   -- and similar for the arcs
                                   arcs'' = orderedUpdates arcs' rArcs
-                              in forwardCheck vars'' arcs''
+                              in forwardCheck vars'' (Just arcs'')
 

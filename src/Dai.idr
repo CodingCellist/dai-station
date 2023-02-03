@@ -42,8 +42,8 @@ solve cspFPath =
      ----                    ###################
      ----                    """
 
-     let Just (soln, _) = forwardCheck csp.vars csp.arcs csp.vars csp.arcs
-                          -- params: original vars+arcs^ ^solved parts
-        | Nothing => putStrLn "No solution found  :'("
-     putStrLn $ "Found a solution!\n\{show soln}"
+     let Just (soln, Nothing) = forwardCheck csp.vars csp.arcs csp.vars (Just csp.arcs)
+                                -- params: original vars+arcs^ ^solved parts
+        | _ => putStrLn "No solution found  :'("
+     putStrLn $ "Found a solution!\n\{prettyListShow soln}"
 
