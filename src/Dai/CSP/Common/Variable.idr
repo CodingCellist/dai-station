@@ -53,16 +53,10 @@ selectVar (v :: vs) =
 ||| Retrieve a value from the given variable's domain.
 ||| (currently just returns the first value; no cleverness here)
 public export
-pickVal : (var : Variable) -> Nat
-pickVal var = case var.dom of
-                   [] => assert_total $ idris_crash "pickVal_dom_empty_ERROR"
-                   (val :: vals) => val
-
--- TODO: rename properly
-%inline
-public export
-selectVal : Variable -> Nat
-selectVal = pickVal
+selectVal : (var : Variable) -> Nat
+selectVal var = case var.dom of
+                     [] => assert_total $ idris_crash "pickVal_dom_empty_ERROR"
+                     (val :: vals) => val
 
 ||| Remove the given value from the variable's domain.
 public export

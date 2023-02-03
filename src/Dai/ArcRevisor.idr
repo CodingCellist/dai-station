@@ -4,21 +4,12 @@ import Data.List
 import Data.Maybe
 import Data.SnocList
 
--- FIXME
-import Debug.Trace
-
 import Dai.CSP.Common
 
 -- omit the footgun; use `getDom` instead
 %hide (.dom)
 
 %default total
-
--- FIXME
-correct : List Variable -> Bool
-correct (a :: (b :: (c :: (d :: [])))) =
-  a.assigned == Just 1 && b.assigned == Just 3 && c.assigned == Just 0 && d.assigned == Just 2
-correct _ = False
 
 findArc :  (v1 : Variable)
         -> (v2 : Variable)
@@ -54,9 +45,6 @@ hasSupport theVal var validTups =
     anyValid (pair :: pairs) (valid :: valids) =
       -- if the first pairing is fine, we're done; if not, try the next one
       isValid pair (valid :: valids) || anyValid pairs (valid :: valids)
-
-----    anySupport cand [] = False
-----    anySupport cand (valid :: valids) = cand == valid || anySupport cand valids
 
 --- hasSupport theVal var validTups =
 ---   let tups = map (\domVal => (theVal, domVal)) var.dom
@@ -142,8 +130,13 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                 -> (currVal : Nat)
                 -> Maybe (List Variable, Maybe (List Arc))
 
+  ------------------------------------------------------------------------
+  -- Forward-Check
 
+  -- if we've lost the arcs, we must be done (we can't revise anything)
   forwardCheck vars Nothing = Just (vars, Nothing)
+
+  -- check if we're done, and if so remove the arcs; otherwise keep going
   forwardCheck vars (Just arcs) =
     if all isJust $ map (.assigned) vars
        then Just (vars, Nothing)
@@ -154,8 +147,13 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                     (Just (vars', Nothing)) => branchFCRight vars' Nothing var val
                     (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') var val
 
+  ------------------------------------------------------------------------
+  -- Branch Left
 
+  -- if we've lost the arcs, we must be done (we can't revise anything)
   branchFCLeft vars Nothing currVar currVal = Just (vars, Nothing)
+
+  -- otherwise, proceed with assignment and arc revision
   branchFCLeft vars (Just arcs) currVar currVal =
     let assignedVar = assign currVar currVal
         -- replace the variable with its assigned version
@@ -175,7 +173,13 @@ parameters (oVars : List Variable) (oArcs : List Arc)
                 in forwardCheck vars'' (Just arcs'')
 
 
+  ------------------------------------------------------------------------
+  -- Branch Right
+
+  -- if we've lost the arcs, we must be done (we can't revise anything)
   branchFCRight vars Nothing currVar currVal = Just (vars, Nothing)
+
+  -- otherwise, proceed with removing the bad value and revising the arcs
   branchFCRight vars (Just arcs) currVar currVal =
     let smallerVar = delVal currVar currVal
     in case (getDom smallerVar) of

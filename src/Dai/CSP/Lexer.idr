@@ -17,7 +17,6 @@ data CSPTok : Type where
   Space : CSPTok
   Newline : CSPTok
 
-  -- FIXME: separate into newlines and spaces, otherwise parser breaks
   ||| An amount of whitespace
   WS : CSPTok
 
