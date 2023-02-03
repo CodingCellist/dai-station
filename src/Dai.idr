@@ -6,7 +6,7 @@ import Data.SnocList
 
 import public Dai.CSP
 
-import public Dai.ArcRevisor
+import public Dai.ForwardChecker
 
 public export
 solve :  (cspFPath : String)

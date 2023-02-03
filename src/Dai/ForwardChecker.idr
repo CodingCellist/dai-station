@@ -1,4 +1,4 @@
-module Dai.ArcRevisor
+module Dai.ForwardChecker
 
 import Data.List
 import Data.Maybe
