@@ -6,10 +6,6 @@ import Data.SnocList
 
 import public Dai.CSP
 
--- necessary ?
-import public Dai.CSP.Common
-
----- import public Dai.ForwardChecker
 import public Dai.ArcRevisor
 
 public export
