@@ -28,27 +28,8 @@ hasSupport :  (theVal : Nat)
            -> (validTups : List (Nat, Nat))
            -> Bool
 hasSupport theVal var validTups =
-  let pairings : List (Nat, Nat) = map (MkPair theVal) (getDom var)
-  in anyValid pairings validTups
-  where
-    isValid : (pairing : (Nat, Nat)) -> List (Nat, Nat) -> Lazy Bool
-    isValid pairing [] = False
-    isValid pairing (valid :: valids) =
-      ---- pairing == valid || isValid pairing valids
-      case pairing == valid of
-           True => True
-           False => isValid pairing valids
-
-    anyValid : (pairings : List (Nat, Nat)) -> List (Nat, Nat) -> Lazy Bool
-    anyValid _ [] = False   -- no more valids to test against, so no
-    anyValid [] (valid :: valids) = False   -- no, none of them were valid
-    anyValid (pair :: pairs) (valid :: valids) =
-      -- if the first pairing is fine, we're done; if not, try the next one
-      isValid pair (valid :: valids) || anyValid pairs (valid :: valids)
-
---- hasSupport theVal var validTups =
----   let tups = map (\domVal => (theVal, domVal)) var.dom
----   in any (== True) $ map (\t => elem t validTups) tups
+  let pairings = map (MkPair theVal) (getDom var)
+  in any (\pairing => elem pairing validTups) pairings
 
 reviseDom :  (fvDom : List Nat)
           -> (currVar : Variable)
