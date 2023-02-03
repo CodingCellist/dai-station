@@ -2,7 +2,7 @@ package Dai
 -- version =
 authors = "Thomas E. Hansen (CodingCellist)"
 -- maintainers =
--- license =
+license = "BSD-3-Clause"
 -- brief =
 -- readme =
 -- homepage =
@@ -16,9 +16,15 @@ authors = "Thomas E. Hansen (CodingCellist)"
 depends = contrib
 
 -- modules to install
-modules = Dai.CSP.Lexer
+modules = Dai.CSP.Common.Misc
+        , Dai.CSP.Common.Variable
+        , Dai.CSP.Common.Arc
+        , Dai.CSP.Common.CSP
+        , Dai.CSP.Common
+        , Dai.CSP.Lexer
         , Dai.CSP.Parser
         , Dai.CSP
+        , Dai.ForwardChecker
         , Dai
 
 -- main file (i.e. file to load at REPL)
