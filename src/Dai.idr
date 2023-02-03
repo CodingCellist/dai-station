@@ -20,16 +20,16 @@ solve cspFPath =
         | Left fError => putStrLn $ "FileError: \{show fError}"
      (Right csp) <- parseFile cspFHandle
         | Left errMsg => putStrLn $ "----- PARSEFILE ERROR -----\n\{errMsg}"
-     putStrLn $ """
-                ##### INITIAL PROBLEM #####
-                ----- Vars ----
-                \{prettyListShow csp.vars}
+     ----- putStrLn $ """
+     -----            ##### INITIAL PROBLEM #####
+     -----            ----- Vars ----
+     -----            \{prettyListShow csp.vars}
 
-                ----- Arcs ----
-                \{prettyListShow csp.arcs}
-                ###########################
+     -----            ----- Arcs ----
+     -----            \{prettyListShow csp.arcs}
+     -----            ###########################
 
-                """
+     -----            """
      ---- let (True, (soln, _)) = forwardCheck csp.vars csp.arcs [<]
      ----   | (False, (nonSoln, arcs)) =>
      ----         putStrLn $ """
