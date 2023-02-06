@@ -19,6 +19,15 @@ Universe, I guess ^^
 
 Some rough performance numbers using `/usr/bin/time` across 3 runs.
 
+## Setup
+
+* Device: Lenovo ThinkPad X1 Extreme (Gen 1)
+* CPU: Intel Core i7-8750H (SMT enabled)
+* RAM: 1 x 16GB DDR4 @ 2667 MT/s
+* OS/Kernel: Arch Linux 6.1.8-hardened1-1-hardened
+* Chez-Scheme: v9.5.8
+* Idris2: v0.6.0-62811c565
+
 ## Forward-checking algorithm
 
 | CSP instance | Time w/o initial arc-consist. | Time w. initial arc-consist. |
