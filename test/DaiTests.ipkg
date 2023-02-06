@@ -1,8 +1,8 @@
-package dai-station-test
+package DaiTests
 -- version =
 authors = "Thomas E. Hansen (CodingCellist)"
 -- maintainers =
--- license =
+license = "BSD-3-Clause"
 -- brief =
 -- readme =
 -- homepage =
@@ -19,10 +19,10 @@ depends = test, contrib
 -- modules =
 
 -- main file (i.e. file to load at REPL)
--- main =
+main = Main
 
 -- name of executable
--- executable =
+executable = daitests
 -- opts =
 -- sourcedir =
 -- builddir =
