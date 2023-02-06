@@ -38,3 +38,22 @@ instances. And even then, the difference is a number of seconds. But hey, it
 _is_ faster. (No idea what happened with Langford's 2_4 by the way; an oddity of
 the smaller instances maybe?)
 
+## Smallest Domain First (SDF) heuristic
+
+| CSP instance  | Time w/o SDF | Time w. SDF |
+| ------------- | -----------: | ----------: |
+| langfords3_9  |        47.36 |       44.03 |
+|               |        47.61 |       44.07 |
+|               |        47.35 |       44.21 |
+| langfords3_10 |       305.71 |      238.61 |
+|               |       303.91 |      241.25 |
+|               |       304.04 |      243.24 |
+
+Once again, the biggest improvements are (predictably, I guess) on the biggest
+problem-instances. I have not included the n-queens instances, nor the smaller
+Langford's, because the difference is negligible or nonexistent.
+
+See
+[the CSV-file](evaln/2023-02-06-sdf-3.csv)
+for the complete data.
+
