@@ -48,15 +48,30 @@ public export
 unassign : (var : Variable) -> Variable
 unassign var = { assigned := Nothing } var
 
+||| A heuristic for variable selection. Currently implemented are:
+|||   * Smallest Domain First (SDF)
+public export
+data Heuristic
+  = ||| Smallest Domain First
+    SDF
+
+||| Sort the variables by domain size, with smaller being "better".
+%inline
+sdfSort : List Variable -> List Variable
+sdfSort vars =
+  sortBy (\ v1, v2 => compare (length $ getDom v1) (length $ getDom v2)) vars
+
 ||| Select the first variable which isn't assigned. Crashes if an empty list
 ||| was passed or is reached.
 public export
-selectVar : List Variable -> Variable
-selectVar [] = assert_total $ idris_crash "selectVar given/reached empty list"
-selectVar (v :: vs) =
+covering
+selectVar : Maybe Heuristic -> List Variable -> Variable
+selectVar _ [] = assert_total $ idris_crash "selectVar given/reached empty list"
+selectVar Nothing (v :: vs) =
   if isNothing v.assigned
      then v
-     else selectVar vs
+     else selectVar Nothing vs
+selectVar (Just SDF) vars = selectVar Nothing (sdfSort vars)
 
 ||| Retrieve a value from the given variable's domain.
 ||| (currently just returns the first value; no cleverness here)

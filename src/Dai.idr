@@ -16,8 +16,9 @@ import public Dai.ForwardChecker
 
 public export
 solve :  (cspFPath : String)
+      -> (heu : Maybe Heuristic)
       -> IO ()
-solve cspFPath =
+solve cspFPath heu =
   do (Right cspFHandle) <- openFile cspFPath Read
         | Left fError => putStrLn $ "FileError: \{show fError}"
      (Right csp) <- parseFile cspFHandle
@@ -30,7 +31,7 @@ solve cspFPath =
         | Nothing => putStrLn "No solution possible: CSP is not arc-consistent."
 
 
-     let Just (soln, Nothing) = forwardCheck vars (Just arcs)
+     let Just (soln, Nothing) = forwardCheck vars (Just arcs) heu
         | _ => putStrLn "No solution found  :'("
 
      putStrLn $ "Found a solution!\n\{prettyListShow soln}"

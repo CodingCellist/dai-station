@@ -128,12 +128,15 @@ fcReviseFutureArcs (fv :: fvs) rArcs currVar newVars =
 ||| @vars The list of variables to solve.
 ||| @arcs The list of arcs (directional constraints) constraining the variables.
 |||       The recursive calls set this to `Nothing` when a solution is found.
+||| @heu  The heuristic to use for variable selection. If no heuristic is given,
+|||       variables are chosen in the order they appear in the `vars` list.
 |||
 ||| @return The assigned variables along with no arcs, if a solution was found;
 |||         the original state of the problem otherwise.
 public export
 forwardCheck :  (vars : List Variable)
              -> (arcs : Maybe (List Arc))
+             -> (heu : Maybe Heuristic)
              -> Maybe (List Variable, Maybe (List Arc))
 
 
@@ -144,6 +147,7 @@ forwardCheck :  (vars : List Variable)
 |||         otherwise. The new arcs become `Nothing` when a solution is found.
 branchFCLeft :  (vars : List Variable)
              -> (arcs : Maybe (List Arc))
+             -> (heu : Maybe Heuristic)
              -> (currVar : Variable)
              -> (currVal : Nat)
              -> Maybe (List Variable, Maybe (List Arc))
@@ -157,6 +161,7 @@ branchFCLeft :  (vars : List Variable)
 |||         when a solution is found.
 branchFCRight :  (vars : List Variable)
               -> (arcs : Maybe (List Arc))
+              -> (heu : Maybe Heuristic)
               -> (currVar : Variable)
               -> (currVal : Nat)
               -> Maybe (List Variable, Maybe (List Arc))
@@ -166,28 +171,28 @@ branchFCRight :  (vars : List Variable)
 -- Forward-Check
 
 -- if we've lost the arcs, we must be done (we can't revise anything)
-forwardCheck vars Nothing = Just (vars, Nothing)
+forwardCheck vars Nothing heu = Just (vars, Nothing)
 
 -- check if we're done, and if so remove the arcs; otherwise keep going
-forwardCheck vars (Just arcs) =
+forwardCheck vars (Just arcs) heu =
   if all isJust $ map (.assigned) vars
      then Just (vars, Nothing)
-     else let var = selectVar vars
+     else let var = selectVar heu vars
               val = selectVal var
-          in case branchFCLeft vars (Just arcs) var val of
-                  Nothing => branchFCRight vars (Just arcs) var val
-                  (Just (vars', Nothing)) => branchFCRight vars' Nothing var val
-                  (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') var val
+          in case branchFCLeft vars (Just arcs) heu var val of
+                  Nothing => branchFCRight vars (Just arcs) heu var val
+                  (Just (vars', Nothing)) => branchFCRight vars' Nothing heu var val
+                  (Just (vars', Just (arcs'))) => branchFCRight vars' (Just arcs') heu var val
 
 
 ------------------------------------------------------------------------
 -- Branch Left
 
 -- if we've lost the arcs, we must be done (we can't revise anything)
-branchFCLeft vars Nothing currVar currVal = Just (vars, Nothing)
+branchFCLeft vars Nothing heu currVar currVal = Just (vars, Nothing)
 
 -- otherwise, proceed with assignment and arc revision
-branchFCLeft vars (Just arcs) currVar currVal =
+branchFCLeft vars (Just arcs) heu currVar currVal =
   let assignedVar = assign currVar currVal
       -- replace the variable with its assigned version
       vars' = orderedReplace vars assignedVar
@@ -203,17 +208,17 @@ branchFCLeft vars (Just arcs) currVar currVal =
                   vars'' = orderedUpdates vars' rVars
                   -- and likewise for the arcs
                   arcs'' = orderedUpdates arcs' rArcs
-              in forwardCheck vars'' (Just arcs'')
+              in forwardCheck vars'' (Just arcs'') heu
 
 
 ------------------------------------------------------------------------
 -- Branch Right
 
 -- if we've lost the arcs, we must be done (we can't revise anything)
-branchFCRight vars Nothing currVar currVal = Just (vars, Nothing)
+branchFCRight vars Nothing heu currVar currVal = Just (vars, Nothing)
 
 -- otherwise, proceed with removing the bad value and revising the arcs
-branchFCRight vars (Just arcs) currVar currVal =
+branchFCRight vars (Just arcs) heu currVar currVal =
   let smallerVar = delVal currVar currVal
   in case (getDom smallerVar) of
           [] => -- removing the value destroys the domain, ABORT!!
@@ -233,5 +238,5 @@ branchFCRight vars (Just arcs) currVar currVal =
                                 vars'' = orderedUpdates vars' rVars
                                 -- and similar for the arcs
                                 arcs'' = orderedUpdates arcs' rArcs
-                            in forwardCheck vars'' (Just arcs'')
+                            in forwardCheck vars'' (Just arcs'') heu
 
