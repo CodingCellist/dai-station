@@ -82,6 +82,7 @@ fcRevise fvToVar@(MkArc futVar currVar arcTups) =
 ||| This prunes the domains of the other variables wrt. the current domain or
 ||| value assignment. Returns the list of updated variables if no domains were
 ||| wiped out, and `Nothing` otherwise (i.e. discards any partial state-update).
+export
 fcReviseFutureArcs :  (vars  : List Variable)
                    -> (rArcs : List Arc)
                    -> (currVar : Variable)
@@ -98,8 +99,7 @@ fcReviseFutureArcs (fv :: fvs) rArcs currVar newVars =
      then -- we don't revise the variable with itself, but we _do_ remember to
           -- keep it!
           fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
-     else -- if there is a relevant arc in the _revised_ arcs, try to revise
-          -- it
+     else -- if there is a relevant arc in the _revised_ arcs, try to revise it
           case findArc fv currVar rArcs of
                Nothing => fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
                Just arc =>
