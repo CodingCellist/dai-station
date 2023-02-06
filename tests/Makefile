@@ -1,6 +1,7 @@
 IDRIS2 ?= idris2
 INTERACTIVE ?= --interactive
-threads ?= $(shell (nproc || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
+NJOBS ?= $(shell (nproc || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
+threads ?= $(NJOBS)
 
 .PHONY: testbin test
 
