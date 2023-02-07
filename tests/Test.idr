@@ -3,5 +3,5 @@ module Test
 import Dai
 
 test : IO ()
-test = solve "4Queens.csp" Nothing
+test = solve "NNNNNNN.csp" Nothing
 

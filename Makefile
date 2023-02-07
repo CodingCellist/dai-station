@@ -25,12 +25,16 @@ check: $(SRCS)
 install: build
 	$(IDRIS2) --install $(TRGT).ipkg
 
-.PHONY: check clean install test
+.PHONY: check clean install test cleantest
 
 test:
+	$(MAKE) -C tests testbin IDRIS2=${IDRIS2}
 	$(MAKE) -C tests only=$(only) except=$(except) IDRIS2=${IDRIS2}
 
 clean:
 	$(RM) -r build src/build
 	@find . -type f -name '*.idr~' -delete
+
+cleantest:
+	$(MAKE) -C tests clean
 

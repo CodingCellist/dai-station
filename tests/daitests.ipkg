@@ -1,4 +1,4 @@
-package DaiTests
+package daitests
 -- version =
 authors = "Thomas E. Hansen (CodingCellist)"
 -- maintainers =
@@ -13,7 +13,7 @@ license = "BSD-3-Clause"
 -- langversion
 
 -- packages to add to search path
-depends = test, contrib
+depends = dai, test, contrib
 
 -- modules to install
 -- modules =
