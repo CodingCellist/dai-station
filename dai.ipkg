@@ -1,5 +1,5 @@
-package Dai
--- version =
+package dai
+version = 0.1.0
 authors = "Thomas E. Hansen (CodingCellist)"
 -- maintainers =
 license = "BSD-3-Clause"
@@ -28,7 +28,7 @@ modules = Dai.CSP.Common.Misc
         , Dai
 
 -- main file (i.e. file to load at REPL)
--- main =
+main = Dai
 
 -- name of executable
 -- executable =
