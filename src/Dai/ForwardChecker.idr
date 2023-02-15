@@ -203,18 +203,6 @@ branchFCLeft vars (Just arcs) heu currVar currVal =
         -- and then continue with this new state
         forwardCheck vars'' (Just arcs'') heu
 
-----  in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
-----          Nothing =>
-----              -- arc revision wiped out a domain, ABORT!!
-----              Nothing
-----
-----          (Just (rVars, rArcs)) =>
-----              let -- replace the variables with their revised versions
-----                  vars'' = orderedUpdates vars' rVars
-----                  -- and likewise for the arcs
-----                  arcs'' = orderedUpdates arcs' rArcs
-----              in forwardCheck vars'' (Just arcs'') heu
-
 
 ------------------------------------------------------------------------
 -- Branch Right
@@ -242,15 +230,4 @@ branchFCRight vars (Just arcs) heu currVar currVal =
 
                     -- and then continue with this new state
                     forwardCheck vars'' (Just arcs'') heu
-
-----              in case fcReviseFutureArcs vars' arcs' smallerVar [<] of
-----                        Nothing =>
-----                            -- arc revision wiped out a domain, ABORT!!
-----                            Nothing
-----                        (Just (rVars, rArcs)) =>
-----                            let -- replace the variables with their revised versions
-----                                vars'' = orderedUpdates vars' rVars
-----                                -- and similar for the arcs
-----                                arcs'' = orderedUpdates arcs' rArcs
-----                            in forwardCheck vars'' (Just arcs'') heu
 
