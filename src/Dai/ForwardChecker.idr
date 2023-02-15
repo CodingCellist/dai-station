@@ -103,16 +103,12 @@ fcReviseFutureArcs (fv :: fvs) rArcs currVar newVars =
           case findArc fv currVar rArcs of
                Nothing => fcReviseFutureArcs fvs rArcs currVar (newVars :< fv)
                Just arc =>
-                case fcRevise arc of
-                     Nothing =>
-                        -- arc revision wiped out a domain, ABORT!!
-                        Nothing
-
-                     (Just revisedArc) =>
-                        -- arc revision succeeded, the new arc contains the revised v
-                        let fv' = revisedArc.from
-                            rArcs' = map (setArcVar fv') rArcs
-                        in fcReviseFutureArcs fvs rArcs' currVar (newVars :< fv')
+                -- `Maybe` do-notation will propagate a `Nothing` as expected
+                do revisedArc <- fcRevise arc
+                   -- arc revision succeeded, the new arc contains the revised v
+                   let fv' = revisedArc.from
+                   let rArcs' = map (setArcVar fv') rArcs
+                   fcReviseFutureArcs fvs rArcs' currVar (newVars :< fv')
 
 
 -- with all the state updates going on, we have to default to `covering` here.
@@ -198,17 +194,26 @@ branchFCLeft vars (Just arcs) heu currVar currVal =
       vars' = orderedReplace vars assignedVar
       -- and do the same for the arcs (no effect on uninvolved arcs)
       arcs' = map (setArcVar assignedVar) arcs
-  in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
-          Nothing =>
-              -- arc revision wiped out a domain, ABORT!!
-              Nothing
+  in do (rVars, rArcs) <- fcReviseFutureArcs vars' arcs' assignedVar [<]
+        -- replace the variables with their revised versions
+        let vars'' = orderedUpdates vars' rVars
+        -- and likewise for the arcs
+        let arcs'' = orderedUpdates arcs' rArcs
 
-          (Just (rVars, rArcs)) =>
-              let -- replace the variables with their revised versions
-                  vars'' = orderedUpdates vars' rVars
-                  -- and likewise for the arcs
-                  arcs'' = orderedUpdates arcs' rArcs
-              in forwardCheck vars'' (Just arcs'') heu
+        -- and then continue with this new state
+        forwardCheck vars'' (Just arcs'') heu
+
+----  in case fcReviseFutureArcs vars' arcs' assignedVar [<] of
+----          Nothing =>
+----              -- arc revision wiped out a domain, ABORT!!
+----              Nothing
+----
+----          (Just (rVars, rArcs)) =>
+----              let -- replace the variables with their revised versions
+----                  vars'' = orderedUpdates vars' rVars
+----                  -- and likewise for the arcs
+----                  arcs'' = orderedUpdates arcs' rArcs
+----              in forwardCheck vars'' (Just arcs'') heu
 
 
 ------------------------------------------------------------------------
@@ -225,18 +230,27 @@ branchFCRight vars (Just arcs) heu currVar currVal =
                 Nothing
 
           (_ :: _) =>
-                let -- replace the variable with its smaller domain version
-                    vars' = orderedReplace vars smallerVar
-                    -- and do the same for the arcs (no effect on uninvolved arcs)
-                    arcs' = map (setArcVar smallerVar) arcs
-                in case fcReviseFutureArcs vars' arcs' smallerVar [<] of
-                        Nothing =>
-                            -- arc revision wiped out a domain, ABORT!!
-                            Nothing
-                        (Just (rVars, rArcs)) =>
-                            let -- replace the variables with their revised versions
-                                vars'' = orderedUpdates vars' rVars
-                                -- and similar for the arcs
-                                arcs'' = orderedUpdates arcs' rArcs
-                            in forwardCheck vars'' (Just arcs'') heu
+              let -- replace the variable with its smaller domain version
+                  vars' = orderedReplace vars smallerVar
+                  -- and do the same for the arcs (no effect on uninvolved arcs)
+                  arcs' = map (setArcVar smallerVar) arcs
+              in do (rVars, rArcs) <- fcReviseFutureArcs vars' arcs' smallerVar [<]
+                    -- replace the variables with their revised versions
+                    let vars'' = orderedUpdates vars' rVars
+                    -- and similar for the arcs
+                    let arcs'' = orderedUpdates arcs' rArcs
+
+                    -- and then continue with this new state
+                    forwardCheck vars'' (Just arcs'') heu
+
+----              in case fcReviseFutureArcs vars' arcs' smallerVar [<] of
+----                        Nothing =>
+----                            -- arc revision wiped out a domain, ABORT!!
+----                            Nothing
+----                        (Just (rVars, rArcs)) =>
+----                            let -- replace the variables with their revised versions
+----                                vars'' = orderedUpdates vars' rVars
+----                                -- and similar for the arcs
+----                                arcs'' = orderedUpdates arcs' rArcs
+----                            in forwardCheck vars'' (Just arcs'') heu
 
