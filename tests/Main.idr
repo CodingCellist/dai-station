@@ -17,7 +17,7 @@ nqueensTests = MkTestPool "NQueens" [] Nothing
 langfordsTests : TestPool
 langfordsTests = MkTestPool "Langford's" [] Nothing
   [ "langfords2_3"
-  , "langfords2_3"
+  , "langfords2_4"
   -- only comment in the thing below if you need a coffee break; they take TIME
   --- , "langfords3_9"    -- takes ~44 seconds on a modern CPU
   --- , "langfords3_10"   -- takes ~4-5 minutes on a modern CPU
